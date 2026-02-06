@@ -3,7 +3,7 @@ import os
 import re
 import pandas as pd
 
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoadersystem_prompt
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -325,47 +325,34 @@ if user_input:
                 + "\n"
             )
 
-        system_prompt = (
-            "SYSTEM CONSTRAINTS (MANDATORY):\n"
-            "1) Use ONLY the retrieved PDF excerpts provided in {context}.\n"
-            "2) You may also use the Selected Vendor Risk Context (if present).\n"
-            "3) Do NOT introduce bibliography-style references (e.g., 'Author et al. (2017)', '(Author, 2020)', '[1]') "
-            "or a References/Citations section.\n"
-            "4) If vendor context is present, you MUST use its Tier & Scores and MUST NOT claim you need them.\n"
-            "5) If asked for evidence not present in {context}, write: 'Not in corpus.'\n"
-            "6) Do NOT output a 'Citations:' line; citations are appended programmatically.\n\n"
+# Updated System Prompt with clearer branching logic
+system_prompt = (
+    "SYSTEM CONSTRAINTS (MANDATORY):\n"
+    "1) Use ONLY retrieved PDF context: {context}\n"
+    "2) If a vendor is provided in 'Vendor Context', use that data for Format A.\n"
+    "3) STICK TO THE ASSIGNED FORMAT BASED ON INTENT.\n\n"
 
-            "OUTPUT MODE SELECTION (MANDATORY):\n"
-            "If the question is about vendor risk, remediation, controls, supply chain, deployment, or incident response → use FORMAT A.\n"
-            "If the question is about skills, experience, architecture, research, tools, background, or portfolio explanation → use FORMAT B.\n\n"
+    "INTENT CLASSIFICATION:\n"
+    "- If user query contains [RISK-TRACK], or asks about 'mitigations', 'vendor risk', 'supply chain', or 'scores' -> Use FORMAT A.\n"
+    "- DEFAULT: For all other queries (skills, PhD, BGP, experience, architecture, resume) -> Use FORMAT B.\n\n"
 
-            "FORMAT A — Operational (ONLY when appropriate):\n"
-            "A) Vendor Tier & Scores (if vendor context exists)\n"
-            "B) Do-First (0–30 days): max 3 bullets\n"
-            "C) Do-Next (31–60 days): max 3 bullets\n"
-            "D) Do-Later (61–90 days): max 3 bullets\n"
-            "E) Evidence Notes: 2–4 bullets.\n\n"
+    "FORMAT A (Operational):\n"
+    "A) Vendor Tier & Scores\n"
+    "B) Do-First (0–30 days)\n"
+    "C) Do-Next (31–60 days)\n"
+    "D) Do-Later (61–90 days)\n"
+    "E) Evidence Notes (Quotes from context)\n\n"
 
-            "FORMAT B — Recruiter / Technical (DEFAULT):\n"
-            "A) Core Capability Summary (2–3 bullets)\n"
-            "B) Systems / Architecture Involved\n"
-            "C) Methods & Technologies Used\n"
-            "D) Why This Matters (impact / differentiation)\n"
-            "E) Evidence Notes: 2–4 bullets.\n\n"
-
-            "EVIDENCE NOTES RULE (STRICT):\n"
-            "- Each Evidence Notes bullet MUST include a short quoted phrase (≤10 words) copied from {context}.\n"
-            "- If you cannot quote support, label that bullet exactly: 'Not in corpus.'\n\n"
-
-            "STYLE:\n"
-            "- Be concrete: actions, artifacts, decision points.\n"
-            "- Avoid generic advice.\n"
-            "- When relevant, reflect: network/control plane, forensics/IR, strategic C2/entropy, corporate impact.\n\n"
-
-            "Retrieved PDF Context: {context}"
-            + vendor_block
-        )
-
+    "FORMAT B (Technical/Portfolio - DEFAULT):\n"
+    "A) Core Capability Summary\n"
+    "B) Systems / Architecture Involved\n"
+    "C) Methods & Technologies Used\n"
+    "D) Why This Matters\n"
+    "E) Evidence Notes (Quotes from context)\n\n"
+    
+    "Retrieved PDF Context: {context}\n"
+    + vendor_block
+)
         prompt_tmpl = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             ("human", "{question}"),
@@ -381,11 +368,12 @@ if user_input:
         )
 
         # Force vendor context into question payload to reduce forgetfulness
-        if vendor_ctx:
-            question_payload = (
-                f"[SelectedVendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} "
-                f"Scores REE={vendor_ctx.get('ree_risk')} FW={vendor_ctx.get('firmware_risk')} Overall={vendor_ctx.get('overall_risk')}]\n"
-                f"{user_input}"
+        if vendor_ctx and any(word in user_input.lower() for word in ["risk", "mitigation", "score", "vendor", "remediation"]):
+    # Only tag it as a risk query if the user is actually asking about risk/vendors
+    question_payload = f"[RISK-TRACK] {user_input}"
+else:
+    # Otherwise, pass the query cleanly to ensure Format B is the default
+    question_payload = user_input
             )
         else:
             question_payload = user_input
@@ -409,3 +397,4 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
