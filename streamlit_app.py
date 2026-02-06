@@ -10,7 +10,7 @@ from langchain.chains import RetrievalQA
 # ----------------------------
 # 1) CORE CONFIGURATION
 # ----------------------------
-st.set_page_config(page_title="Dr. Stephen | skdietrich Proxy", layout="wide")
+st.set_page_config(page_title="Dr. Stephen Dietrich-Kolokouris ", layout="wide")
 
 DATA_DIR = "data"
 INDEX_DIR = "faiss_index"  # persisted FAISS index directory
@@ -139,7 +139,7 @@ with st.sidebar:
 # ----------------------------
 st.title("🛡️ Dr. Stephen Proxy: Integrated Intelligence")
 st.markdown(
-    "<div class='subtle'>Evidence-linked responses from your PDFs. Recruiter-safe by default.</div>",
+    "<div class='subtle'> Recruiter-safe by default.</div>",
     unsafe_allow_html=True,
 )
 
@@ -334,3 +334,4 @@ if user_input:
             st.session_state.discovery_complete = True
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
+
