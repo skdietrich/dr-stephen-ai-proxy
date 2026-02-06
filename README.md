@@ -1,4 +1,4 @@
-# 🛡️ Dr. Stephen: Intelligence & Security Research Proxy
+# 🛡️ Dr. Stephen Dietrich-Kolokouris Research Proxy
 ### *Operationalizing Research Through AI-Driven Capability Demonstrations*
 
 This repository houses an interactive **AI Chief of Staff** and **Methodology Engine**. It is designed to bridge the gap between high-level academic research (Cybersecurity, Intelligence, and Historical Analysis) and practical, real-world application.
@@ -36,16 +36,15 @@ A demonstration of my historical research methodology (e.g., *Behind the Mask: H
 ---
 
 ## 🚀 How to Interact
-1.  **Visit the Live App:** [INSERT YOUR STREAMLIT LINK HERE]
+1.  **Visit the Live App:** [(https://skdietrich.streamlit.app/)]
 2.  **Input your specific problem:** Ask the AI, *"How would Dr. Stephen analyze a supply chain threat from a Tier 2 vendor?"*
 3.  **Review the Code:** Explore `app.py` to see how I build systems that integrate data-driven research with large language models.
 
 ---
 
 ## 📝 Contact & Verification
-* **Author:** Dr. Stephen
+* **Author:** Dr. Stephen Dietrich-Kolokouris 
 * **Focus:** Cybersecurity Research | Intelligence Analysis | Historical Methodology
-* **Credential Verification:** [Link to your LinkedIn or ResearchGate profile]
-
+* **Credential Verification:** [(https://www.linkedin.com/in/stephendietrich-kolokouris/)]
 ---
 *Developed as a demonstration of technical synthesis and strategic thinking.*
