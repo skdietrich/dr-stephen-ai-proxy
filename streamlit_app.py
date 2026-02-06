@@ -48,7 +48,7 @@ def enforce_no_external_refs(text: str) -> str:
 
 
 # =========================
-# Streamlit config + UI skin (commercial / restrained)
+# Streamlit config + "Commercial / Gov-Contractor" UI skin (CSS)
 # =========================
 st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris, PhD | Strategic Proxy",
@@ -74,40 +74,12 @@ html, body, [class*="stApp"]{
   background: radial-gradient(1200px 900px at 20% 0%, #0B1020 0%, #070A12 50%, #05060A 100%) !important;
   color: var(--txt) !important;
 }
-.main .block-container { padding-top: 1.0rem; padding-bottom: 2rem; }
+
+.main .block-container { padding-top: 1.0rem; padding-bottom: 2.2rem; }
 
 section[data-testid="stSidebar"]{
   background: linear-gradient(180deg, rgba(11,16,32,0.92) 0%, rgba(5,6,10,0.92) 100%) !important;
   border-right: 1px solid var(--line);
-}
-section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] label{
-  color: var(--txt) !important;
-}
-
-.dk-card{
-  background: linear-gradient(180deg, rgba(15,23,42,0.90) 0%, rgba(2,6,23,0.70) 100%);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-}
-.dk-hero{
-  background: linear-gradient(135deg, rgba(96,165,250,0.14) 0%, rgba(34,197,94,0.08) 55%, rgba(15,23,42,0.65) 100%);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px 20px;
-  box-shadow: 0 12px 34px rgba(0,0,0,0.42);
-}
-.dk-title{
-  font-size: 1.55rem;
-  font-weight: 750;
-  letter-spacing: 0.2px;
-  margin: 0;
-}
-.dk-subtitle{
-  color: var(--muted);
-  margin-top: 6px;
-  margin-bottom: 0;
 }
 
 [data-testid="stChatMessage"]{
@@ -116,21 +88,39 @@ section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] l
   background: rgba(15,23,42,0.55);
 }
 
-.stButton > button {
-  border-radius: 10px;
-  border: 1px solid rgba(148,163,184,0.25);
-  background: rgba(2,6,23,0.65);
-  color: var(--txt);
-  padding: 0.55rem 0.75rem;
-}
-.stButton > button:hover{
-  border-color: rgba(96,165,250,0.55);
-  background: rgba(15,23,42,0.70);
+.dk-card{
+  background: linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(2,6,23,0.72) 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.42);
 }
 
-small, .stCaption { color: var(--muted) !important; }
+.dk-hero{
+  background: linear-gradient(135deg, rgba(96,165,250,0.14) 0%, rgba(15,23,42,0.65) 70%, rgba(2,6,23,0.70) 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 14px 38px rgba(0,0,0,0.46);
+}
 
-hr { border: 0; border-top: 1px solid rgba(148,163,184,0.18); }
+.dk-title{
+  font-size: 1.55rem;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+.dk-subtitle{
+  color: var(--muted);
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+/* Cleaner product feel */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
 </style>
 """,
     unsafe_allow_html=True,
@@ -138,28 +128,34 @@ hr { border: 0; border-top: 1px solid rgba(148,163,184,0.18); }
 
 
 # =========================
-# Assets (logo)
+# Assets (logo + headshot) + links
 # =========================
-def find_logo_path():
-    """
-    Put logo in one of:
-      - ./assets/logo.png|jpg|jpeg
-      - ./logo.png|jpg|jpeg
-    """
-    candidates = [
-        os.path.join("assets", "logo.png"),
-        os.path.join("assets", "logo.jpg"),
-        os.path.join("assets", "logo.jpeg"),
-        "logo.png",
-        "logo.jpg",
-        "logo.jpeg",
-    ]
-    for p in candidates:
+def _first_existing(paths):
+    for p in paths:
         if os.path.exists(p):
             return p
     return None
 
-LOGO_PATH = find_logo_path()
+HEADSHOT_PATH = _first_existing([
+    os.path.join("assets", "headshot.png"),
+    os.path.join("assets", "headshot.jpg"),
+    os.path.join("assets", "headshot.jpeg"),
+    "headshot.png",
+    "headshot.jpg",
+    "headshot.jpeg",
+])
+
+LOGO_PATH = _first_existing([
+    os.path.join("assets", "logo.png"),
+    os.path.join("assets", "logo.jpg"),
+    os.path.join("assets", "logo.jpeg"),
+    "logo.png",
+    "logo.jpg",
+    "logo.jpeg",
+])
+
+LINKEDIN_URL = st.secrets.get("LINKEDIN_URL", "").strip()
+GITHUB_URL = st.secrets.get("GITHUB_URL", "https://github.com/skdietrich/dr-stephen-ai-proxy").strip()
 
 
 # =========================
@@ -172,11 +168,7 @@ def init_knowledge_base():
         st.stop()
 
     loader = PyPDFDirectoryLoader("data/")
-    try:
-        docs = loader.load()
-    except Exception as e:
-        st.error(f"Failed to load PDFs from `/data`: {e}")
-        st.stop()
+    docs = loader.load()
 
     if not docs:
         st.error("No documents found in `/data`.")
@@ -185,7 +177,7 @@ def init_knowledge_base():
     splitter = RecursiveCharacterTextSplitter(chunk_size=1100, chunk_overlap=160)
     chunks = splitter.split_documents(docs)
 
-    # Embeddings init compatibility
+    # Embeddings init compatibility (api_key vs openai_api_key)
     try:
         embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
     except TypeError:
@@ -197,51 +189,12 @@ def init_knowledge_base():
 
     return vectorstore.as_retriever(search_kwargs={"k": 7})
 
+
 retriever = init_knowledge_base()
 
 
 # =========================
-# Mode toggle (middle / main area) helpers
-# =========================
-MODE_OPTIONS = {
-    "Recruiter / Hiring Manager": {
-        "tone": "concise, recruiter-grade, plain language, high-signal",
-        "focus": "skills, outcomes, scope, credible claims, portfolio explanation",
-    },
-    "CISO / Risk & Governance": {
-        "tone": "audit-forward, policy-aware, control-oriented, risk framing",
-        "focus": "controls, threat models, supply chain, governance, evidence discipline",
-    },
-    "Engineering Manager / Architect": {
-        "tone": "technical, architecture-first, implementation detail, tradeoffs",
-        "focus": "system design, RAG stack, validation, data engineering, performance",
-    },
-}
-
-def build_system_prompt(mode_label: str, vendor_block: str) -> str:
-    cfg = MODE_OPTIONS.get(mode_label, MODE_OPTIONS["Recruiter / Hiring Manager"])
-    return (
-        "You are an evidence-only technical proxy representing Dr. Stephen Dietrich-Kolokouris.\n\n"
-        "MANDATORY CONSTRAINTS:\n"
-        "1) Use ONLY the retrieved corpus excerpts in {context}.\n"
-        "2) If selected vendor context is present, you may use it as deterministic input.\n"
-        "3) Do NOT invent facts, credentials, project details, or external citations.\n"
-        "4) If something is not supported by {context}, say 'Not in corpus.' briefly, then continue with what IS supported.\n"
-        "5) Do NOT output bibliography-style citations or a references section.\n\n"
-        f"MODE: {mode_label}\n"
-        f"TONE: {cfg['tone']}\n"
-        f"FOCUS: {cfg['focus']}\n\n"
-        "RESPONSE STYLE:\n"
-        "- Default: coherent, complete paragraphs; no rigid template.\n"
-        "- If the user explicitly asks for a 30/60/90 or a plan/timeline, provide a clean plan (bullets OK).\n"
-        "- Keep answers internally consistent; avoid fragmented lists.\n\n"
-        "Retrieved Context:\n{context}"
-        + vendor_block
-    )
-
-
-# =========================
-# Sidebar
+# Sidebar (branding + controls)
 # =========================
 with st.sidebar:
     if LOGO_PATH:
@@ -250,10 +203,22 @@ with st.sidebar:
     st.markdown("### Dr. Stephen Dietrich-Kolokouris")
     st.caption("Applied Security • Systems Analysis • Data Engineering • Strategic Modeling")
 
+    if HEADSHOT_PATH:
+        st.image(HEADSHOT_PATH, use_container_width=True)
+
+    cols = st.columns([1, 1])
+    with cols[0]:
+        if LINKEDIN_URL:
+            st.link_button("LinkedIn", LINKEDIN_URL, use_container_width=True)
+        else:
+            st.button("LinkedIn", disabled=True, use_container_width=True)
+    with cols[1]:
+        st.link_button("GitHub", GITHUB_URL, use_container_width=True)
+
     st.info(
         "🔒 **Public-Safe / Evidence-Only**\n\n"
         "Responses are generated exclusively from the loaded corpus. "
-        "If a claim cannot be supported, the answer will say **Not in corpus**.",
+        "If a claim cannot be supported, the response will say **Not in corpus**.",
         icon="🔐",
     )
 
@@ -325,8 +290,6 @@ with st.sidebar:
                     missing = sorted(list(required_cols - set(df.columns)))
                     if missing:
                         st.error(f"CSV missing required columns: {missing}")
-                    elif len(df) == 0:
-                        st.error("CSV loaded but contains zero rows.")
                     else:
                         def _score_row(r):
                             s = score_overall(r.to_dict(), weight_fw=weight_fw)
@@ -350,18 +313,6 @@ with st.sidebar:
                         row = out.iloc[int(i)].to_dict()
 
                         if st.button("Use selected vendor in chat", key="use_vendor_ctx"):
-                            overall = row.get("overall_risk", 0.0)
-                            try:
-                                overall_f = float(overall)
-                            except Exception:
-                                overall_f = 0.0
-
-                            mits = mitigation_playbook(overall_f)
-                            if mits is None:
-                                mits = []
-                            elif isinstance(mits, str):
-                                mits = [mits]
-
                             st.session_state.selected_vendor_context = {
                                 "vendor_name": row.get("vendor_name"),
                                 "product_or_component": row.get("product_or_component"),
@@ -369,11 +320,11 @@ with st.sidebar:
                                 "origin_jurisdiction": row.get("origin_jurisdiction"),
                                 "criticality": row.get("criticality"),
                                 "contains_ree_magnets": row.get("contains_ree_magnets"),
-                                "ree_risk": float(row.get("ree_risk", 0.0) or 0.0),
-                                "firmware_risk": float(row.get("firmware_risk", 0.0) or 0.0),
-                                "overall_risk": overall_f,
+                                "ree_risk": float(row.get("ree_risk", 0.0)),
+                                "firmware_risk": float(row.get("firmware_risk", 0.0)),
+                                "overall_risk": float(row.get("overall_risk", 0.0)),
                                 "tier": row.get("tier"),
-                                "mitigations": mits,
+                                "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
                             }
                             st.success("Vendor context stored. Ask a vendor/control question in chat.")
 
@@ -381,17 +332,32 @@ with st.sidebar:
         if ctx:
             st.divider()
             st.markdown("#### Selected Vendor Context")
-            st.caption(f"{ctx.get('vendor_name')} | Tier: {ctx.get('tier')} | Overall: {ctx.get('overall_risk'):.2f}")
+            try:
+                overall_val = float(ctx.get("overall_risk", 0.0))
+            except Exception:
+                overall_val = 0.0
+            st.caption(f"{ctx.get('vendor_name')} | Tier: {ctx.get('tier')} | Overall: {overall_val:.2f}")
             if st.button("Clear selected vendor", key="clear_vendor_ctx"):
                 st.session_state.selected_vendor_context = None
                 st.success("Cleared vendor context.")
 
 
 # =========================
-# Main UI (commercial / professional layout)
+# Main UI (commercial layout)
 # =========================
-st.markdown(
-    """
+left, right = st.columns([1.15, 2.85], gap="large")
+
+with left:
+    st.markdown('<div class="dk-card">', unsafe_allow_html=True)
+    if HEADSHOT_PATH:
+        st.image(HEADSHOT_PATH, use_container_width=True)
+    else:
+        st.caption("Add `assets/headshot.png` for a headshot panel.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with right:
+    st.markdown(
+        """
 <div class="dk-hero">
   <div class="dk-title">Strategic Proxy — Evidence-Only Technical Briefing</div>
   <div class="dk-subtitle">
@@ -399,38 +365,21 @@ st.markdown(
   </div>
 </div>
 """,
-    unsafe_allow_html=True,
-)
-
-st.caption("Scope boundary: public-safe responses from the loaded corpus only. No external citations are generated.")
-st.write("")
-
-# --- Middle / main MODE toggle ---
-mid_left, mid_right = st.columns([1.25, 2.0], gap="large")
-with mid_left:
-    st.markdown(
-        '<div class="dk-card"><b>Response mode</b><br/><span style="color:#A1A1AA">Choose audience to shape tone + focus.</span></div>',
         unsafe_allow_html=True,
     )
-    mode = st.radio(
-        "Mode",
-        list(MODE_OPTIONS.keys()),
-        index=0,
-        label_visibility="collapsed",
-        key="mode_toggle",
-    )
-with mid_right:
-    st.markdown(
-        f"""
-<div class="dk-card">
-  <b>Active mode:</b> {mode}<br/>
-  <span style="color:#A1A1AA">
-    {MODE_OPTIONS[mode]['focus'].capitalize()}.
-  </span>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
+
+    st.write("")
+    btns = st.columns([1, 1, 2.2], gap="small")
+    with btns[0]:
+        if LINKEDIN_URL:
+            st.link_button("LinkedIn", LINKEDIN_URL, use_container_width=True)
+        else:
+            st.button("LinkedIn", disabled=True, use_container_width=True)
+            st.caption("Set LINKEDIN_URL in Streamlit secrets.")
+    with btns[1]:
+        st.link_button("GitHub Repo", GITHUB_URL, use_container_width=True)
+    with btns[2]:
+        st.caption("Public-safe mode • Evidence-only • No external citations • Audit-forward")
 
 st.write("")
 
@@ -441,9 +390,9 @@ with colA:
 <div class="dk-card">
   <b>Operating mode</b><br/>
   Public-safe • Evidence-only • Audit-forward
-  <hr style="margin:12px 0;">
+  <hr style="border:0;border-top:1px solid rgba(148,163,184,0.18);margin:12px 0;">
   <span style="color:#A1A1AA">
-  Recruiter/CISO evaluation focus: coherent answers, explicit evidence, no invented citations.
+  Designed for recruiter/CISO evaluation: coherent answers, explicit evidence, no invented citations.
   </span>
 </div>
 """,
@@ -456,7 +405,7 @@ with colB:
 <div class="dk-card">
   <b>Primary domains</b><br/>
   Networks • Forensics • Supply Chain • Strategic Modeling
-  <hr style="margin:12px 0;">
+  <hr style="border:0;border-top:1px solid rgba(148,163,184,0.18);margin:12px 0;">
   <span style="color:#A1A1AA">
   Ask “what/how/why” questions; plans/timelines are generated only when requested.
   </span>
@@ -470,8 +419,8 @@ with colC:
         """
 <div class="dk-card">
   <b>How to use</b><br/>
-  1) Start with recruiter questions below<br/>
-  2) Ask deep technical follow-ups<br/>
+  1) Start with recruiter questions (role, constraints, priorities)<br/>
+  2) Ask about NAMECOMMS / WarSim / portfolio / methods<br/>
   3) Evidence is appended as corpus filenames
 </div>
 """,
@@ -482,66 +431,41 @@ st.write("")
 
 
 # =========================
-# Pinned recruiter opening questions (GUIDED INTERVIEW)
-# =========================
-st.subheader("Start Here — Recruiter / Hiring Manager Questions")
-st.caption("Click a prompt to prefill the chat input.")
-
-qcol1, qcol2 = st.columns(2)
-
-with qcol1:
-    if st.button("What modern AI/ML technologies have you used?"):
-        st.session_state.prefill = "What modern AI/ML technologies have you used?"
-    if st.button("Explain the WarSim architecture at a high level."):
-        st.session_state.prefill = "Explain the WarSim architecture at a high level."
-    if st.button("What is NAMECOMMS, and what problem does it solve?"):
-        st.session_state.prefill = "What is NAMECOMMS, and what problem does it solve?"
-
-with qcol2:
-    if st.button("What is your RAG stack and how do you prevent hallucinations?"):
-        st.session_state.prefill = "What is your RAG stack and how do you prevent hallucinations?"
-    if st.button("How do you operate in restricted / evidence-only environments?"):
-        st.session_state.prefill = "How do you operate in restricted / evidence-only environments?"
-    if st.button("How did you build this interactive portfolio?"):
-        st.session_state.prefill = "How did you build this interactive portfolio?"
-
-st.write("")
-st.divider()
-
-
-# =========================
-# Chat state + display
+# Chat state + recruiter pinned opener
 # =========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if "recruiter_intro_done" not in st.session_state:
+    st.session_state.recruiter_intro_done = False
+
+if not st.session_state.messages and not st.session_state.recruiter_intro_done:
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": (
+                "**To tailor this briefing:**\n"
+                "1) What role are you hiring for (CISO, Security Architect, DFIR, Data Eng, AI/ML)?\n"
+                "2) What environment constraints apply (regulated / restricted / air-gapped)?\n"
+                "3) What’s the highest-risk domain: supply chain/firmware, incident response, AI misuse, or infrastructure resilience?"
+            ),
+        }
+    )
+    st.session_state.recruiter_intro_done = True
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# --- FIXED: chat_input prefill (st.chat_input does NOT support value=) ---
-if "chat_text" not in st.session_state:
-    st.session_state.chat_text = ""
-
-prefill = st.session_state.pop("prefill", "")
-if prefill:
-    st.session_state.chat_text = prefill
-
-user_input = st.chat_input(
-    "Ask about NAMECOMMS, WarSim, AI/ML systems, firmware risk, or this portfolio…",
-    key="chat_text",
-)
+user_input = st.chat_input("Ask about NAMECOMMS, WarSim, AI/ML systems, firmware risk, or this portfolio…")
 
 if user_input:
-    # optional: clear the input after send
-    st.session_state.chat_text = ""
-
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        # LLM init compatibility
+        # LLM init compatibility (api_key vs openai_api_key)
         try:
             llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=st.secrets["OPENAI_API_KEY"])
         except TypeError:
@@ -551,10 +475,6 @@ if user_input:
 
         vendor_block = ""
         if vendor_ctx:
-            mits = vendor_ctx.get("mitigations") or []
-            if isinstance(mits, str):
-                mits = [mits]
-
             vendor_block = (
                 "\n\nSelected Vendor Context (deterministic):\n"
                 f"- Vendor: {vendor_ctx.get('vendor_name')}\n"
@@ -565,13 +485,24 @@ if user_input:
                 f"- Tier: {vendor_ctx.get('tier')}\n"
                 f"- Scores: REE={vendor_ctx.get('ree_risk')}, FW={vendor_ctx.get('firmware_risk')}, Overall={vendor_ctx.get('overall_risk')}\n"
                 "Mitigation priorities (deterministic):\n"
-                + "\n".join([f"- {m}" for m in mits])
+                + "\n".join([f"- {mm}" for mm in vendor_ctx.get("mitigations", [])])
                 + "\n"
             )
 
-        system_prompt = build_system_prompt(
-            st.session_state.get("mode_toggle", "Recruiter / Hiring Manager"),
-            vendor_block,
+        system_prompt = (
+            "You are an evidence-only technical proxy representing Dr. Stephen Dietrich-Kolokouris.\n\n"
+            "MANDATORY CONSTRAINTS:\n"
+            "1) Use ONLY the retrieved corpus excerpts in {context}.\n"
+            "2) If selected vendor context is present, you may use it as deterministic input.\n"
+            "3) Do NOT invent facts, credentials, project details, or external citations.\n"
+            "4) If part of a question is unsupported, say 'Not in corpus.' briefly and continue.\n"
+            "5) Do NOT output bibliography-style citations. Evidence is appended automatically.\n\n"
+            "STYLE:\n"
+            "- Default: coherent, recruiter-grade explanation.\n"
+            "- If the user explicitly asks for a 30/60/90 or a plan/timeline, then provide one.\n"
+            "- Otherwise, avoid rigid templates.\n\n"
+            "Retrieved Context:\n{context}"
+            + vendor_block
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -590,20 +521,14 @@ if user_input:
             input_key="query",
         )
 
-        # If vendor context is present, lightly prime the question without forcing a format
+        question_payload = user_input
         if vendor_ctx:
-            question_payload = (
-                f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} "
-                f"Overall={vendor_ctx.get('overall_risk')}] {user_input}"
-            )
-        else:
-            question_payload = user_input
+            question_payload = f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} Overall={vendor_ctx.get('overall_risk')}] {user_input}"
 
         result = qa.invoke({"query": question_payload})
-        answer = result.get("result", "") or ""
+        answer = (result.get("result", "") or "").strip()
         answer = enforce_no_external_refs(answer)
 
-        # Evidence: filenames only
         sources = sorted(
             {
                 os.path.basename(d.metadata.get("source", ""))
