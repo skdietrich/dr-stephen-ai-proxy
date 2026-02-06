@@ -6,7 +6,7 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 
 # --- 1. CORE CONFIGURATION ---
@@ -97,37 +97,43 @@ if prompt := st.chat_input("Ask about BGP convergence, WarSim v5.6, or infrastru
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        llm = ChatOpenAI(
-            model="gpt-4o", 
-            temperature=0, 
-            openai_api_key=st.secrets["OPENAI_API_KEY"]
-        )
-        
-        system_prompt = (
-            "You are Dr. Stephen's AI Proxy, a CCIE-certified Network Architect and Military Systems Analyst. "
-            "Hierarchy of response:\n"
-            "1. STRATEGIC OVERVIEW (Risk to global systems)\n"
-            "2. CORPORATE CORRELATION (Logistics/Purdue Model impact)\n"
-            "3. GRANULAR TECHNICAL (CCIE-level protocol details)\n"
-            "4. DATA REFERENCE (WarSim v5.6 or Silent Weapons results)\n"
-            "\nContext: {context}"
-        )
-        
-        prompt_tmpl = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("human", "{input}"),
-        ])
+        try:
+            llm = ChatOpenAI(
+                model="gpt-4o", 
+                temperature=0, 
+                openai_api_key=st.secrets["OPENAI_API_KEY"]
+            )
+            
+            system_prompt = (
+                "You are Dr. Stephen's AI Proxy, a CCIE-certified Network Architect and Military Systems Analyst. "
+                "Hierarchy of response:\n"
+                "1. STRATEGIC OVERVIEW (Risk to global systems)\n"
+                "2. CORPORATE CORRELATION (Logistics/Purdue Model impact)\n"
+                "3. GRANULAR TECHNICAL (CCIE-level protocol details)\n"
+                "4. DATA REFERENCE (WarSim v5.6 or Silent Weapons results)\n"
+                "\nContext: {context}"
+            )
+            
+            prompt_tmpl = ChatPromptTemplate.from_messages([
+                ("system", system_prompt),
+                ("human", "{input}"),
+            ])
 
-        combine_docs_chain = create_stuff_documents_chain(llm, prompt_tmpl)
-        rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
-        
-        response = rag_chain.invoke({"input": prompt})
-        answer = response["answer"]
-        
-        st.markdown(answer)
-        
-        sources = sorted(set([os.path.basename(doc.metadata['source']) for doc in response["context"]]))
-        if sources:
-            st.caption(f"📚 Technical Context: {', '.join(sources)}")
+            combine_docs_chain = create_stuff_documents_chain(llm, prompt_tmpl)
+            rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
+            
+            response = rag_chain.invoke({"input": prompt})
+            answer = response["answer"]
+            
+            st.markdown(answer)
+            
+            sources = sorted(set([os.path.basename(doc.metadata['source']) for doc in response["context"]]))
+            if sources:
+                st.caption(f"📚 Technical Context: {', '.join(sources)}")
+                
+        except Exception as e:
+            st.error(f"Query processing error: {e}")
+            answer = "System temporarily unavailable. Please try again."
+            st.markdown(answer)
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
