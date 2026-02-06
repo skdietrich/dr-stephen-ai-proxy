@@ -16,50 +16,22 @@ from mitigations import tier_from_score, mitigation_playbook
 
 
 # =========================
-# Hard lock-down utilities
+# Conservative lock-down utilities (won't shred content)
 # =========================
 
-# Patterns that commonly indicate invented/external citations or bibliography
-_EXTERNAL_CITATION_PATTERNS = [
-    r"\b\d{4}\b",  # years
-    r"\bet al\.\b",
-    r"\bCISA\b",
-    r"\bNIST\b",
-    r"\bISO\s*27001\b",
-    r"\bSOC\s*2\b",
-    r"\bMITRE\b",
-    r"\bATT&CK\b",
-    r"\bSANS\b",
-    r"\bDHS\b",
-    r"\bNSA\b",
-    r"\bFBI\b",
-    r"\bDoD\b",
-    r"\bEU\b",
-    r"\bIEEE\b",
-    r"\bACM\b",
-    r"\bRFC\s*\d+\b",
-    r"\bCVE-\d{4}-\d+\b",
-    r"https?://\S+",
-    r"\[\d+\]",  # [1] style refs
-    r"\(\s*[A-Z][A-Za-z\-]+,\s*\d{4}\s*\)",  # (Author, 2020)
-    r"\(\s*[A-Z][A-Za-z\-]+\s+et\s+al\.,\s*\d{4}\s*\)",  # (Author et al., 2020)
-    r"\bReferences\b",
-    r"\bBibliography\b",
-    r"\bWorks Cited\b",
-    r"\bCitations\b\s*:\s*",  # we append citations ourselves
-]
-
-# If you want a *strict* ban on years entirely, leave the year pattern enabled.
-# If your PDFs contain years and you want to allow them, remove r"\b\d{4}\b".
-_EXTERNAL_REGEX = re.compile("|".join(f"({p})" for p in _EXTERNAL_CITATION_PATTERNS), flags=re.IGNORECASE)
+# Only block bibliography-style external references (the actual failure mode you saw)
+_EXTERNAL_REF_REGEX = re.compile(
+    r"(\bet al\.\b|\bworks cited\b|\breferences\b|\bbibliography\b|\[\d+\]|\([A-Z][A-Za-z\-]+,\s*\d{4}\))",
+    flags=re.IGNORECASE
+)
 
 
 def sanitize_llm_output(text: str) -> str:
     """
-    Aggressive post-filter:
-    - Removes any model-generated "Citations:" / "References:" blocks
-    - Strips lines that look like external citation/bibliography content
-    - Does not touch our programmatic citations appended at the end.
+    Conservative post-filter:
+    - Removes model-generated bibliography / citations blocks
+    - Removes explicit 'Citations:' lines (we append our own)
+    - Does NOT delete normal operational content
     """
     if not text:
         return text
@@ -71,44 +43,40 @@ def sanitize_llm_output(text: str) -> str:
     for ln in lines:
         s = ln.strip()
 
-        # Enter bibliography mode if model starts one
+        # Start of a references block
         if re.match(r"^(citations|references|bibliography|works cited)\s*:?\s*$", s, flags=re.IGNORECASE):
             in_biblio = True
             continue
 
-        # If in bibliography mode, drop until blank line then exit
+        # While in bibliography block, drop lines until a blank line ends it
         if in_biblio:
             if s == "":
                 in_biblio = False
             continue
 
-        # Drop any line containing typical external citation markers
-        # NOTE: This is strict; it will remove lines with years, RFC, etc.
-        if _EXTERNAL_REGEX.search(ln):
+        # Drop single-line "Citations: ..." that the model might generate
+        if re.match(r"^citations\s*:\s*.+$", s, flags=re.IGNORECASE):
             continue
 
         cleaned.append(ln)
 
     out = "\n".join(cleaned).strip()
-
-    # Remove trailing excess blank lines
     out = re.sub(r"\n{3,}", "\n\n", out).strip()
     return out
 
 
-def enforce_no_external_mentions(text: str) -> str:
+def enforce_no_external_refs(text: str) -> str:
     """
-    Second-pass clamp: if any forbidden pattern survives, replace with a compliance warning.
-    This ensures no hallucinated external citations slip through.
+    If the model tries to inject bibliography-style references, block.
+    Does not block normal content mentioning standards unless it is in citation form.
     """
     if not text:
         return text
 
-    if _EXTERNAL_REGEX.search(text):
+    if _EXTERNAL_REF_REGEX.search(text):
         return (
-            "Response blocked by citation guardrail: the draft included external references not present in the loaded PDF corpus.\n\n"
-            "Re-ask with: (1) a selected vendor row, and (2) a specific technical question.\n"
-            "I will answer strictly from retrieved PDF context and will only cite PDF filenames appended by the system."
+            "Response blocked by citation guardrail: the draft included bibliography-style external references.\n\n"
+            "Re-ask the question. The system will answer strictly from retrieved PDF context and append only PDF filenames as citations."
         )
     return text
 
@@ -137,6 +105,7 @@ def init_knowledge_base():
         st.error("No intelligence assets found. Please upload PDFs to /data.")
         st.stop()
 
+    # Preserve dense research and config blocks
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(documents)
 
@@ -146,7 +115,8 @@ def init_knowledge_base():
         vectorstore = FAISS.from_documents(texts, embeddings)
         status.update(label="✅ Proxy Online: All Skill Sets Synced", state="complete")
 
-    return vectorstore.as_retriever(search_kwargs={"k": 5})
+    # Increase k to improve evidence recall
+    return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
 retriever = init_knowledge_base()
@@ -272,7 +242,6 @@ with st.sidebar:
                         }
                         st.success("Vendor context stored. Ask a question in the chat (the Proxy will incorporate this).")
 
-    # show current selected vendor context (optional)
     ctx = st.session_state.get("selected_vendor_context")
     if ctx:
         st.divider()
@@ -330,25 +299,28 @@ if user_input:
             )
 
         # Hard-locked system prompt: only retrieved PDF content + deterministic vendor context.
+        # IMPORTANT: We do NOT ban years/standards here; we ban bibliography-style references.
         system_prompt = (
             "SYSTEM CONSTRAINTS (MANDATORY):\n"
-            "1) You may use ONLY the retrieved PDF excerpts provided in {context}.\n"
+            "1) Use ONLY the retrieved PDF excerpts provided in {context}.\n"
             "2) You may also use the Selected Vendor Risk Context (if present).\n"
-            "3) You must NOT introduce external citations, authors, years, agencies, standards, frameworks, or URLs unless the exact text appears in {context}.\n"
-            "4) If asked for evidence not present in {context}, you must write: 'Not in corpus.'\n"
-            "5) Do NOT output any bibliography, references, or 'Citations:' lines.\n"
-            "6) If vendor context is present, you must use its Tier & Scores and must NOT say you need them.\n\n"
+            "3) Do NOT introduce bibliography-style references (e.g., 'Author et al. (2017)', '(Author, 2020)', '[1]') "
+            "or a References/Citations section.\n"
+            "4) If vendor context is present, you MUST use its Tier & Scores and MUST NOT claim you need them.\n"
+            "5) If asked for evidence not present in {context}, write: 'Not in corpus.'\n"
+            "6) Do NOT output a 'Citations:' line; citations are appended programmatically.\n\n"
 
             "OUTPUT FORMAT (STRICT):\n"
             "A) Vendor Tier & Scores (if vendor context exists)\n"
             "B) Do-First (0–30 days): max 3 bullets\n"
             "C) Do-Next (31–60 days): max 3 bullets\n"
             "D) Do-Later (61–90 days): max 3 bullets\n"
-            "E) Evidence Notes: 2–4 bullets referencing ONLY claims supported by {context}. If unsupported, label 'Not in corpus.'\n\n"
+            "E) Evidence Notes: 2–4 bullets. Each bullet MUST include a short quoted phrase (≤10 words) copied from {context}. "
+            "If you cannot quote support, label that bullet 'Not in corpus.'\n\n"
 
-            "DOMAIN EXPECTATIONS:\n"
-            "- When relevant, structure your technical content across: (i) network/control plane, (ii) forensics/IR, (iii) strategic C2/entropy, (iv) corporate impact.\n"
-            "- Keep it operational (actions + outputs), not academic.\n\n"
+            "STYLE:\n"
+            "- Operational actions + deliverables; avoid generic advice.\n"
+            "- When relevant, reflect: network/control plane, forensics/IR, strategic C2/entropy, corporate impact.\n\n"
 
             "Retrieved PDF Context: {context}"
             + vendor_block
@@ -368,7 +340,7 @@ if user_input:
             input_key="query"
         )
 
-        # Force vendor context to be present in the "question" payload too (prevents model forgetting)
+        # Force vendor context into question payload to reduce forgetfulness
         if vendor_ctx:
             question_payload = (
                 f"[SelectedVendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} "
@@ -381,9 +353,9 @@ if user_input:
         res = qa.invoke({"query": question_payload})
         answer = res.get("result", "")
 
-        # Post-filter: remove any model-generated external citations / biblio patterns
+        # Post-filter: remove model-generated biblio/citations only
         answer = sanitize_llm_output(answer)
-        answer = enforce_no_external_mentions(answer)
+        answer = enforce_no_external_refs(answer)
 
         # Programmatic citations: PDF filenames only from retrieved sources
         sources = sorted(set(
