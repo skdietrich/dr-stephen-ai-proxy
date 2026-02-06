@@ -1,8 +1,7 @@
 import streamlit as st
 import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_text_splitters import RecursiveCharacterTextSplitterfrom langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 
@@ -137,4 +136,5 @@ with col_chat:
 with col_redteam:
     st.header("🔴 Red Team")
     if st.button("🔴 Initiate Challenge"):
+
         st.info("**AI Proxy Challenge:** Dr. Stephen's research on 'Silent Weapons' reveals that sleeper malware in ROM initializes vital processes like verifying cryptographic signatures[cite: 2819]. **Challenge:** How would your security architecture detect an implant that exists before the OS even boots[cite: 2815, 2822]?")
