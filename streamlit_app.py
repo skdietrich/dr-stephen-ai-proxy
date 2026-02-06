@@ -10,11 +10,12 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 
-# Prompt template import compatibility
+# Prompt template import compatibility (LangChain moved these over time)
 try:
     from langchain_core.prompts import ChatPromptTemplate
 except Exception:
     from langchain.prompts import ChatPromptTemplate
+
 
 # -------------------------
 # Optional deterministic modules (do NOT hard-fail if missing)
@@ -48,10 +49,10 @@ def enforce_no_external_refs(text: str) -> str:
 
 
 # =========================
-# Streamlit config + “defense contractor” skin (CSS)
+# Streamlit config + high-end UI skin (CSS)
 # =========================
 st.set_page_config(
-    page_title="Dr. Stephen Dietrich-Kolokouris, PhD ",
+    page_title="Dr. Stephen Dietrich-Kolokouris, PhD | Strategic Proxy",
     page_icon="🛡️",
     layout="wide",
 )
@@ -67,64 +68,64 @@ st.markdown(
   --txt:#E5E7EB;
   --muted:#A1A1AA;
   --accent:#60A5FA;
-  --accent2:#22C55E;
 }
 
-/* Page background */
 html, body, [class*="stApp"]{
   background: radial-gradient(1200px 900px at 20% 0%, #0B1020 0%, #070A12 50%, #05060A 100%) !important;
   color: var(--txt) !important;
 }
 
-/* Layout padding */
-.main .block-container { padding-top: 1.0rem; padding-bottom: 2.0rem; }
+.main .block-container { padding-top: 1.2rem; padding-bottom: 2rem; max-width: 1220px; }
 
-/* Sidebar */
 section[data-testid="stSidebar"]{
   background: linear-gradient(180deg, rgba(11,16,32,0.92) 0%, rgba(5,6,10,0.92) 100%) !important;
   border-right: 1px solid var(--line);
 }
 
-/* Cards */
+.dk-hero{
+  background: linear-gradient(135deg, rgba(96,165,250,0.14) 0%, rgba(15,23,42,0.70) 55%, rgba(2,6,23,0.55) 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 34px rgba(0,0,0,0.42);
+}
+
+.dk-title{
+  font-size: 1.45rem;
+  font-weight: 760;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+.dk-subtitle{
+  color: var(--muted);
+  margin-top: 6px;
+  margin-bottom: 0;
+  font-size: 0.98rem;
+}
+
 .dk-card{
-  background: linear-gradient(180deg, rgba(15,23,42,0.90) 0%, rgba(2,6,23,0.70) 100%);
+  background: linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(2,6,23,0.72) 100%);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
-.dk-hero{
-  background: linear-gradient(135deg, rgba(96,165,250,0.14) 0%, rgba(34,197,94,0.08) 55%, rgba(15,23,42,0.65) 100%);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px 18px;
-  box-shadow: 0 12px 34px rgba(0,0,0,0.42);
-}
-.dk-title{
-  font-size: 1.55rem;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  margin: 0;
-}
-.dk-subtitle{
+
+.dk-small{
   color: var(--muted);
-  margin-top: 4px;
-  margin-bottom: 0;
+  font-size: 0.92rem;
 }
 
-/* Chat message chrome */
+.dk-hr{
+  border:0;border-top:1px solid rgba(148,163,184,0.18);
+  margin:12px 0;
+}
+
 [data-testid="stChatMessage"]{
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(15,23,42,0.55);
-}
-
-/* Make expanders feel more “panel-like” */
-[data-testid="stExpander"]{
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(15,23,42,0.35);
+  background: rgba(15,23,42,0.58);
 }
 </style>
 """,
@@ -133,25 +134,15 @@ section[data-testid="stSidebar"]{
 
 
 # =========================
-# Branding assets
+# Assets (logo)
 # =========================
+def logo_path() -> str | None:
+    p = os.path.join("assets", "logo.png")
+    return p if os.path.exists(p) else None
+
+LOGO = logo_path()
+
 LINKEDIN_URL = "https://www.linkedin.com/in/stephendietrich-kolokouris/"
-
-def find_logo_path() -> str | None:
-    candidates = [
-        os.path.join("assets", "logo.png"),
-        os.path.join("assets", "logo.jpg"),
-        os.path.join("assets", "logo.jpeg"),
-        "logo.png",
-        "logo.jpg",
-        "logo.jpeg",
-    ]
-    for p in candidates:
-        if os.path.exists(p):
-            return p
-    return None
-
-LOGO_PATH = find_logo_path()
 
 
 # =========================
@@ -160,7 +151,7 @@ LOGO_PATH = find_logo_path()
 @st.cache_resource
 def init_knowledge_base():
     if not os.path.exists("data"):
-        st.error("Missing **/data** directory. Upload/commit PDFs into `/data`.")
+        st.error("Missing **/data** directory. Commit/upload your PDFs into `/data`.")
         st.stop()
 
     loader = PyPDFDirectoryLoader("data/")
@@ -173,7 +164,7 @@ def init_knowledge_base():
     splitter = RecursiveCharacterTextSplitter(chunk_size=1100, chunk_overlap=160)
     chunks = splitter.split_documents(docs)
 
-    # Embeddings compatibility
+    # Embeddings init compatibility (api_key vs openai_api_key depending on package version)
     try:
         embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
     except TypeError:
@@ -181,58 +172,95 @@ def init_knowledge_base():
 
     with st.status("Indexing corpus (FAISS)…", expanded=False) as status:
         vectorstore = FAISS.from_documents(chunks, embeddings)
-        status.update(label="✅ Corpus indexed", state="complete")
+        status.update(label="✅ Corpus indexed (FAISS ready)", state="complete")
 
     return vectorstore.as_retriever(search_kwargs={"k": 7})
+
 
 retriever = init_knowledge_base()
 
 
 # =========================
-# Sidebar (clean: brand + notice + expanders)
+# Recruiter-first opening questions (pinned)
+# =========================
+DEFAULT_RECRUITER_QUESTIONS = [
+    "What modern AI/ML technologies have you worked with?",
+    "Describe the WarSim architecture at a high level.",
+    "What’s your experience with restricted or classified environments (public-safe summary)?",
+    "How did you build this interactive portfolio (stack + approach)?",
+    "What data engineering projects have you delivered recently?",
+]
+
+def ensure_pinned_intro():
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "intro_pinned" not in st.session_state:
+        st.session_state.intro_pinned = False
+
+    if not st.session_state.intro_pinned:
+        opening = (
+            "I’m Dr. Stephen’s evidence-only technical proxy. To orient this review, pick one of the "
+            "standard recruiter questions below (or ask your own)."
+        )
+        st.session_state.messages.append({"role": "assistant", "content": opening})
+        st.session_state.intro_pinned = True
+
+
+# =========================
+# Sidebar
 # =========================
 with st.sidebar:
-    if LOGO_PATH:
-        st.image(LOGO_PATH, use_container_width=True)
+    if LOGO:
+        st.image(LOGO, use_container_width=True)
 
     st.markdown("### Dr. Stephen Dietrich-Kolokouris")
     st.caption("Applied Security • Systems Analysis • Data Engineering • Strategic Modeling")
-    st.link_button("LinkedIn Profile", LINKEDIN_URL, use_container_width=True)
+
+    st.link_button("LinkedIn Profile", LINKEDIN_URL)
 
     st.info(
         "🔒 **Public-Safe / Evidence-Only**\n\n"
-        "Answers are generated exclusively from the loaded corpus. "
-        "Unsupported claims return **Not in corpus** (briefly).",
+        "Responses are generated exclusively from the loaded corpus. "
+        "If a claim cannot be supported, the response will say **Not in corpus**.",
         icon="🔐",
     )
 
-    with st.expander("Operational Controls", expanded=False):
+    # Put clutter behind dropdowns
+    with st.expander("How this system works", expanded=False):
         st.markdown(
-            "- **Evidence-based retrieval (RAG)**\n"
-            "- **Audit-forward outputs (source traceability)**\n"
-            "- **Restricted-environment discipline**\n"
-            "- **Deterministic scoring** (optional module)"
+            """
+**1) Corpus ingestion**
+- PDFs in `/data/` are loaded and chunked (overlap preserved).
+
+**2) Retrieval**
+- Your question triggers FAISS similarity search to pull the most relevant chunks.
+
+**3) Evidence-bounded generation**
+- The assistant is instructed to answer **only** using retrieved chunks.
+- If the corpus does not support a claim: **Not in corpus.**
+
+**4) Evidence traceability**
+- The UI appends evidence filenames (**no external citations**).
+
+**5) Optional deterministic scoring (supply-chain)**
+- If `scoring.py` + `mitigations.py` are present, vendor CSV data can be scored deterministically
+  and injected into the chat as structured context.
+            """.strip()
         )
 
-    with st.expander("Tools", expanded=False):
-        st.markdown("**Resilience & Degradation Simulator**")
-        domain = st.selectbox(
-            "System domain",
-            ["Network (BGP/VXLAN)", "Forensics (MDFTs)", "Strategic (WarSim)", "History/C2"],
-            key="domain_select",
+    with st.expander("Operational controls (public-safe)", expanded=False):
+        st.markdown(
+            """
+- Evidence-only retrieval (RAG)
+- External citation guardrail
+- Source traceability (filename evidence)
+- Restricted-environment discipline (no sensitive ops)
+            """.strip()
         )
-        chaos = st.slider("Entropy / Disorder Index (H)", 0.0, 8.0, 2.4, key="entropy_slider")
-        if st.button("Run resilience check", key="resilience_btn"):
-            if chaos > 6.0:
-                st.error(f"High-risk degradation: {domain}")
-                st.caption("Interpretation: elevated entropy reduces deterministic recovery and increases uncertainty.")
-            else:
-                st.success(f"Operationally stable: {domain} | H={chaos:.1f}")
 
     if SCORING_ENABLED:
-        with st.expander("Vendor Risk (optional)", expanded=False):
-            st.caption("Deterministic scoring → mitigations (only used when requested)")
-
+        with st.expander("Supply chain risk assessment (optional)", expanded=False):
+            st.caption("Deterministic scoring → mitigations (only when used)")
             weight_fw = st.slider("Weight: Firmware integrity", 0.0, 1.0, 0.55, 0.05, key="weight_fw")
             st.caption(f"Weight: REE concentration = {1.0 - weight_fw:.2f}")
 
@@ -293,37 +321,37 @@ with st.sidebar:
                         )
                         row = out.iloc[int(i)].to_dict()
 
-                        cols = st.columns([1, 1], gap="small")
-                        with cols[0]:
-                            if st.button("Use selected vendor in chat", key="use_vendor_ctx"):
-                                st.session_state.selected_vendor_context = {
-                                    "vendor_name": row.get("vendor_name"),
-                                    "product_or_component": row.get("product_or_component"),
-                                    "component_class": row.get("component_class"),
-                                    "origin_jurisdiction": row.get("origin_jurisdiction"),
-                                    "criticality": row.get("criticality"),
-                                    "contains_ree_magnets": row.get("contains_ree_magnets"),
-                                    "ree_risk": float(row.get("ree_risk", 0.0)),
-                                    "firmware_risk": float(row.get("firmware_risk", 0.0)),
-                                    "overall_risk": float(row.get("overall_risk", 0.0)),
-                                    "tier": row.get("tier"),
-                                    "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
-                                }
-                                st.success("Vendor context stored.")
-                        with cols[1]:
-                            if st.button("Clear vendor context", key="clear_vendor_ctx"):
-                                st.session_state.selected_vendor_context = None
-                                st.success("Cleared vendor context.")
+                        if st.button("Use selected vendor in chat", key="use_vendor_ctx"):
+                            st.session_state.selected_vendor_context = {
+                                "vendor_name": row.get("vendor_name"),
+                                "product_or_component": row.get("product_or_component"),
+                                "component_class": row.get("component_class"),
+                                "origin_jurisdiction": row.get("origin_jurisdiction"),
+                                "criticality": row.get("criticality"),
+                                "contains_ree_magnets": row.get("contains_ree_magnets"),
+                                "ree_risk": float(row.get("ree_risk", 0.0)),
+                                "firmware_risk": float(row.get("firmware_risk", 0.0)),
+                                "overall_risk": float(row.get("overall_risk", 0.0)),
+                                "tier": row.get("tier"),
+                                "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
+                            }
+                            st.success("Vendor context stored. Ask a vendor/control question in chat.")
+
+            ctx = st.session_state.get("selected_vendor_context")
+            if ctx:
+                st.caption(f"Selected: {ctx.get('vendor_name')} | Tier {ctx.get('tier')} | Overall {ctx.get('overall_risk'):.2f}")
+                if st.button("Clear vendor context", key="clear_vendor_ctx"):
+                    st.session_state.selected_vendor_context = None
+                    st.success("Cleared vendor context.")
 
 
 # =========================
-# Main UI (minimal above-the-fold)
+# Main UI (hero + recruiter questions)
 # =========================
-
 st.markdown(
     """
 <div class="dk-hero">
-  <div class="dk-title">Technical Skillset Briefing</div>
+  <div class="dk-title">Strategic Technical Proxy — Recruiter & CISO Review Interface</div>
   <div class="dk-subtitle">
     Cybersecurity • AI/ML Decision Support • Data Engineering • Strategic Systems Analysis
   </div>
@@ -334,165 +362,147 @@ st.markdown(
 
 st.write("")
 
-top = st.columns([1.25, 1.25, 1.5], gap="large")
-with top[0]:
+ensure_pinned_intro()
+
+with st.expander("Recruiter starter questions", expanded=True):
+    cols = st.columns(2)
+    for idx, q in enumerate(DEFAULT_RECRUITER_QUESTIONS):
+        with cols[idx % 2]:
+            if st.button(q, key=f"starter_{idx}"):
+                st.session_state.messages.append({"role": "user", "content": q})
+
+# Clean clutter: keep the explanation cards small
+colA, colB, colC = st.columns([1.1, 1.1, 1.6], gap="large")
+with colA:
     st.markdown(
         """
 <div class="dk-card">
   <b>Operating mode</b><br/>
   Public-safe • Evidence-only • Audit-forward
-  <hr style="border:0;border-top:1px solid rgba(148,163,184,0.18);margin:12px 0;">
-  <span style="color:#A1A1AA">
-  Built for recruiter/CISO evaluation: coherent answers + explicit evidence.
-  </span>
+  <hr class="dk-hr">
+  <span class="dk-small">Designed for evaluator clarity and trust.</span>
 </div>
 """,
         unsafe_allow_html=True,
     )
-
-with top[1]:
+with colB:
     st.markdown(
         """
 <div class="dk-card">
   <b>Domains</b><br/>
   Networks • Forensics • Supply Chain • Strategic Modeling
-  <hr style="border:0;border-top:1px solid rgba(148,163,184,0.18);margin:12px 0;">
-  <span style="color:#A1A1AA">
-  Plans/timelines only when requested.
-  </span>
+  <hr class="dk-hr">
+  <span class="dk-small">Ask “what/how/why”. Plans only when requested.</span>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+with colC:
+    st.markdown(
+        """
+<div class="dk-card">
+  <b>Evidence</b><br/>
+  Filenames from the loaded corpus are appended to each answer.
+  <hr class="dk-hr">
+  <span class="dk-small">No external citations are generated.</span>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
-with top[2]:
-    with st.expander("Quick help", expanded=False):
-        st.markdown(
-            "**Examples:**\n"
-            "- “Explain NAMECOMMS entropy detection in plain terms.”\n"
-            "- “Walk me through the WarSim architecture at a high level.”\n"
-            "- “How do you validate RAG outputs in restricted environments?”\n"
-            "- “Use the selected vendor: map score → mitigations.” (after CSV)\n"
-        )
-
 st.write("")
 
 
 # =========================
-# Recruiter-first pinned opener (collapsed behind expander)
+# Chat
 # =========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "recruiter_opener_sent" not in st.session_state:
-    st.session_state.recruiter_opener_sent = False
-
-if not st.session_state.messages and not st.session_state.recruiter_opener_sent:
-    opener = (
-        "**Recruiter quick-start (answer any 1–2):**\n"
-        "1) Role scope you’re hiring for?\n"
-        "2) Environment constraints (regulated / air-gapped / restricted)?\n"
-        "3) Primary risk area (firmware, IR, identity, AI misuse, network control plane)?\n"
-        "4) Desired Day-30 deliverable (assessment, prototype, roadmap, hardening plan)?"
-    )
-    st.session_state.messages.append({"role": "assistant", "content": opener})
-    st.session_state.recruiter_opener_sent = True
-
-with st.expander("Recruiter intake prompts", expanded=False):
-    st.markdown(st.session_state.messages[0]["content"] if st.session_state.messages else "")
-
-
-# =========================
-# Chat display
-# =========================
-# Show chat history EXCEPT the pinned opener (since it’s in the expander)
-start_idx = 1 if st.session_state.messages and st.session_state.messages[0]["role"] == "assistant" else 0
-for m in st.session_state.messages[start_idx:]:
+for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
 user_input = st.chat_input("Ask about NAMECOMMS, WarSim, AI/ML systems, firmware risk, or this portfolio…")
 
 if user_input:
-    # store user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    with st.chat_message("assistant"):
-        # LLM init compatibility
-        try:
-            llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=st.secrets["OPENAI_API_KEY"])
-        except TypeError:
-            llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=st.secrets["OPENAI_API_KEY"])
+with st.chat_message("assistant"):
+    # LLM init compatibility (api_key vs openai_api_key depending on package version)
+    try:
+        llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=st.secrets["OPENAI_API_KEY"])
+    except TypeError:
+        llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=st.secrets["OPENAI_API_KEY"])
 
-        vendor_ctx = st.session_state.get("selected_vendor_context")
+    vendor_ctx = st.session_state.get("selected_vendor_context")
 
-        vendor_block = ""
-        if vendor_ctx:
-            vendor_block = (
-                "\n\nSelected Vendor Context (deterministic):\n"
-                f"- Vendor: {vendor_ctx.get('vendor_name')}\n"
-                f"- Component: {vendor_ctx.get('product_or_component')}\n"
-                f"- Class: {vendor_ctx.get('component_class')}\n"
-                f"- Origin/Jurisdiction: {vendor_ctx.get('origin_jurisdiction')}\n"
-                f"- Criticality: {vendor_ctx.get('criticality')}\n"
-                f"- Tier: {vendor_ctx.get('tier')}\n"
-                f"- Scores: REE={vendor_ctx.get('ree_risk')}, FW={vendor_ctx.get('firmware_risk')}, Overall={vendor_ctx.get('overall_risk')}\n"
-                "Mitigation priorities (deterministic):\n"
-                + "\n".join([f"- {m}" for m in vendor_ctx.get("mitigations", [])])
-                + "\n"
-            )
-
-        system_prompt = (
-            "You are an evidence-only technical proxy representing Dr. Stephen Dietrich-Kolokouris.\n\n"
-            "MANDATORY CONSTRAINTS:\n"
-            "1) Use ONLY the retrieved corpus excerpts in {context}.\n"
-            "2) If selected vendor context is present, you may use it as deterministic input.\n"
-            "3) Do NOT invent facts, credentials, project details, or external citations.\n"
-            "4) If asked for something not supported by {context}, say 'Not in corpus.' briefly and continue.\n"
-            "5) Do NOT output bibliography-style citations. Evidence is appended automatically.\n\n"
-            "STYLE:\n"
-            "- Default: coherent, recruiter-grade explanation.\n"
-            "- Provide a plan/timeline ONLY if the user explicitly asks.\n\n"
-            "Retrieved Context:\n{context}"
-            + vendor_block
+    vendor_block = ""
+    if vendor_ctx:
+        vendor_block = (
+            "\n\nSelected Vendor Context (deterministic):\n"
+            f"- Vendor: {vendor_ctx.get('vendor_name')}\n"
+            f"- Component: {vendor_ctx.get('product_or_component')}\n"
+            f"- Class: {vendor_ctx.get('component_class')}\n"
+            f"- Origin/Jurisdiction: {vendor_ctx.get('origin_jurisdiction')}\n"
+            f"- Criticality: {vendor_ctx.get('criticality')}\n"
+            f"- Tier: {vendor_ctx.get('tier')}\n"
+            f"- Scores: REE={vendor_ctx.get('ree_risk')}, FW={vendor_ctx.get('firmware_risk')}, Overall={vendor_ctx.get('overall_risk')}\n"
+            "Mitigation priorities (deterministic):\n"
+            + "\n".join([f"- {x}" for x in vendor_ctx.get("mitigations", [])])
+            + "\n"
         )
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                ("human", "{question}"),
-            ]
-        )
+    system_prompt = (
+        "You are an evidence-only technical proxy representing Dr. Stephen Dietrich-Kolokouris.\n\n"
+        "MANDATORY CONSTRAINTS:\n"
+        "1) Use ONLY the retrieved corpus excerpts in {context}.\n"
+        "2) If selected vendor context is present, you may use it as deterministic input.\n"
+        "3) Do NOT invent facts, credentials, project details, or external citations.\n"
+        "4) If asked for something not supported by {context}, say 'Not in corpus.' briefly and continue.\n"
+        "5) Do NOT output bibliography-style citations. Evidence is appended automatically.\n\n"
+        "STYLE:\n"
+        "- Default: coherent, recruiter-grade explanation.\n"
+        "- Only provide a 30/60/90 plan when explicitly asked.\n\n"
+        "Retrieved Context:\n{context}"
+        + vendor_block
+    )
 
-        qa = RetrievalQA.from_chain_type(
-            llm=llm,
-            retriever=retriever,
-            chain_type="stuff",
-            return_source_documents=True,
-            chain_type_kwargs={"prompt": prompt},
-            input_key="query",
-        )
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            ("human", "{question}"),
+        ]
+    )
 
-        question_payload = user_input
-        if vendor_ctx:
-            question_payload = f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} Overall={vendor_ctx.get('overall_risk')}] {user_input}"
+    qa = RetrievalQA.from_chain_type(
+        llm=llm,
+        retriever=retriever,
+        chain_type="stuff",
+        return_source_documents=True,
+        chain_type_kwargs={"prompt": prompt},
+        input_key="query",
+    )
 
-        result = qa.invoke({"query": question_payload})
-        answer = (result.get("result", "") or "").strip()
-        answer = enforce_no_external_refs(answer)
+    question_payload = user_input
+    if vendor_ctx:
+        question_payload = f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} Overall={vendor_ctx.get('overall_risk')}] {user_input}"
 
-        sources = sorted(
-            {
-                os.path.basename(d.metadata.get("source", ""))
-                for d in result.get("source_documents", [])
-                if d.metadata.get("source")
-            }
-        )
-        if sources:
-            answer += "\n\n**Evidence:** " + ", ".join(sources)
+    result = qa.invoke({"query": question_payload})
+    answer = result.get("result", "") or ""
+    answer = enforce_no_external_refs(answer)
 
-        st.markdown(answer)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
+    sources = sorted(
+        {
+            os.path.basename(d.metadata.get("source", ""))
+            for d in result.get("source_documents", [])
+            if d.metadata.get("source")
+        }
+    )
+    if sources:
+        answer += "\n\n**Evidence:** " + ", ".join(sources)
 
+    st.markdown(answer)
+    st.session_state.messages.append({"role": "assistant", "content": answer})
