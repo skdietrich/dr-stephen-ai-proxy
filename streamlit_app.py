@@ -334,12 +334,48 @@ if user_input:
             "4) If vendor context is present, you MUST use its Tier & Scores and MUST NOT claim you need them.\n"
             "5) If asked for evidence not present in {context}, write: 'Not in corpus.'\n"
             "6) Do NOT output a 'Citations:' line; citations are appended programmatically.\n\n"
-            "OUTPUT FORMAT (STRICT):\n"
-            "A) Vendor Tier & Scores (if vendor context exists)\n"
-            "B) Do-First (0–30 days): max 3 bullets\n"
-            "C) Do-Next (31–60 days): max 3 bullets\n"
-            "D) Do-Later (61–90 days): max 3 bullets\n"
-            "E) Evidence Notes: 2–4 bullets. Each bullet MUST include a short quoted phrase (≤10 words) copied from {context}. "
+           "OUTPUT MODE SELECTION (MANDATORY):"
+
+If the question is about:
+• vendor risk
+• remediation
+• controls
+• supply chain
+• deployment
+• incident response
+
+→ Use FORMAT A (Operational)
+
+If the question is about:
+• skills
+• experience
+• architecture
+• research
+• tools
+• background
+• portfolio explanation
+
+→ Use FORMAT B (Recruiter / Technical)
+
+------------------------------------
+
+FORMAT A — Operational (ONLY when appropriate):
+
+A) Vendor Tier & Scores (if vendor context exists)
+B) Do-First (0–30 days): max 3 bullets
+C) Do-Next (31–60 days): max 3 bullets
+D) Do-Later (61–90 days): max 3 bullets
+E) Evidence Notes (quoted phrases from context)
+
+------------------------------------
+
+FORMAT B — Recruiter / Technical (DEFAULT):
+
+A) Core Capability Summary (2–3 bullets)
+B) Systems / Architecture Involved
+C) Methods & Technologies Used
+D) Why This Matters (impact / differentiation)
+E) Evidence Notes (quoted phrases from context)
             "If you cannot quote support, label that bullet 'Not in corpus.'\n\n"
             "STYLE:\n"
             "- Operational actions + deliverables; avoid generic advice.\n"
@@ -391,5 +427,6 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
 
 
