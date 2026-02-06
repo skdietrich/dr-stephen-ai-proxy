@@ -22,20 +22,24 @@ INDEX_DIR = "faiss_index"  # persisted FAISS index directory
 st.markdown(
     """
 <style>
-.smallcaps { font-variant: small-caps; letter-spacing: 0.04em; }
 .badge {
   display:inline-block; padding:0.2rem 0.55rem; border-radius:0.6rem;
   border:1px solid rgba(255,255,255,0.18); margin-right:0.4rem;
   font-size: 0.85rem;
 }
 .subtle { opacity: 0.85; }
+.small { font-size: 0.9rem; opacity: 0.92; }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
 st.markdown(
-    "<span class='badge'>RAG</span><span class='badge'>FAISS</span><span class='badge'>Streamlit</span><span class='badge'>Cyber / Intel</span><span class='badge'>Research Corpus</span>",
+    "<span class='badge'>RAG</span>"
+    "<span class='badge'>FAISS</span>"
+    "<span class='badge'>Streamlit</span>"
+    "<span class='badge'>Recruiter-Safe</span>"
+    "<span class='badge'>Evidence-Linked</span>",
     unsafe_allow_html=True,
 )
 
@@ -56,13 +60,11 @@ def init_knowledge_base():
         st.error("No PDFs found in /data. Add your corpus PDFs to the repo /data directory.")
         st.stop()
 
-    # Preserve dense technical context
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     chunks = splitter.split_documents(documents)
 
     embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
 
-    # Persist FAISS index to disk to avoid recompute on cold starts
     if os.path.exists(INDEX_DIR):
         with st.status("⚡ Loading cached vector index...", expanded=False) as status:
             vectorstore = FAISS.load_local(
@@ -77,7 +79,7 @@ def init_knowledge_base():
             vectorstore.save_local(INDEX_DIR)
             status.update(label="✅ Index built and cached", state="complete")
 
-    # Higher-quality retrieval: MMR reduces redundancy
+    # MMR retrieval reduces redundancy
     return vectorstore.as_retriever(
         search_type="mmr",
         search_kwargs={"k": 6, "fetch_k": 20, "lambda_mult": 0.6},
@@ -93,7 +95,7 @@ retriever = init_knowledge_base()
 with st.sidebar:
     st.header("🛡️ Dr. Stephen Dietrich-Kolokouris")
     st.markdown("**PhD | CCIE #2482 | Data Engineer**")
-    st.caption("WarSim | Supply Chain | Forensics | Network Analysis")
+    st.caption("Supply Chain | AI Risk | Forensics | Network Analysis")
 
     st.divider()
 
@@ -107,32 +109,28 @@ with st.sidebar:
     st.divider()
 
     st.header("🔎 Retrieval Controls")
-    # NOTE: We do not rebuild the vectorstore here; only tune retriever k
     k = st.slider("Top-K chunks", 3, 10, 6)
     retriever.search_kwargs["k"] = k
 
     st.divider()
 
-    st.header("🏢 System Entropy Simulator")
+    st.header("🏢 System Stress Dial")
     domain = st.selectbox(
-        "Select Domain",
-        ["Network (BGP/VXLAN)", "Forensics (MDFTs)", "Strategic (WarSim)", "History/C2"],
+        "Domain",
+        ["Supply Chain", "Enterprise Network", "Forensics/IR", "Strategic Modeling"],
     )
-    chaos = st.slider("Information Entropy Level (H)", 0.0, 8.0, 2.4)
+    stress = st.slider("Risk pressure", 0.0, 10.0, 3.0)
 
-    if st.button("Analyze Resilience"):
-        if chaos > 6.0:
-            st.error(f"CRITICAL FAILURE: {domain} stability compromised")
-            st.write("Root cause: high entropy prevents deterministic recovery.")
+    if st.button("Quick readout"):
+        if stress > 7.5:
+            st.error(f"High risk pressure in {domain}: containment and integrity controls first.")
         else:
-            st.success(f"System operational: {domain} H={chaos}")
+            st.success(f"Stable posture in {domain}: continue hardening and verification.")
 
     st.divider()
-
-    st.header("🧰 Safety & Scope")
     st.caption(
-        "This interface will not discuss secrets/credentials/classified work. "
-        "It will explain public methods, tooling, and research-backed approaches."
+        "Scope policy: no secrets/credentials/classified details. "
+        "Public methods, evidence, and demonstrable artifacts only."
     )
 
 
@@ -141,7 +139,7 @@ with st.sidebar:
 # ----------------------------
 st.title("🛡️ Dr. Stephen Proxy: Integrated Intelligence")
 st.markdown(
-    "<div class='subtle'>Expertise: Networking, Forensics, Data Engineering, Strategic Systems, Historical C2</div>",
+    "<div class='subtle'>Evidence-linked responses from your PDFs. Recruiter-safe by default.</div>",
     unsafe_allow_html=True,
 )
 
@@ -151,91 +149,98 @@ st.markdown(
 # ----------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
 if "discovery_complete" not in st.session_state:
     st.session_state.discovery_complete = False
 
-
-# Display chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
 
 # ----------------------------
-# 7) PROMPT FACTORY (STABLE)
+# 7) PROMPT FACTORY (RECRUITER FIX)
 # ----------------------------
 def build_system_prompt(response_mode: str, discovery: bool) -> str:
-    # Hard guardrails that improve credibility and reduce risk
     safety = (
-        "Security policy: If the user requests secrets, credentials, classified work, exploit steps, "
-        "or illegal instructions, refuse and redirect to high-level methodology, risk controls, and public artifacts. "
-        "Do not invent facts. If the corpus does not contain the answer, say so explicitly.\n"
+        "Security policy:\n"
+        "- Do not reveal secrets, credentials, private keys, or classified work.\n"
+        "- If asked about classified work: refuse briefly and redirect to public methodology.\n"
+        "- Do not invent facts; if the corpus is insufficient, say so.\n"
+        "- Avoid step-by-step wrongdoing or exploit instructions.\n"
     )
 
     citations_rule = (
-        "Requirement: End with a line starting exactly with 'Citations:' followed by a comma-separated list of the PDF filenames used.\n"
+        "Requirement:\n"
+        "- End with a line starting exactly with 'Citations:' followed by a comma-separated list of PDF filenames used.\n"
+        "- Only list filenames that appear in retrieved context.\n"
     )
 
-    # Discovery phase: interviewer-style triage
+    recruiter_rules = (
+        "Recruiter readability rules:\n"
+        "- Use plain language and outcomes.\n"
+        "- Do NOT lead with acronyms or niche tools. If technical depth is needed, add a short optional 'Technical detail (optional)' section.\n"
+        "- Prefer concrete deliverables, sequencing, and metrics.\n"
+    )
+
     if not discovery:
         if response_mode == "Recruiter":
             return (
                 safety
+                + recruiter_rules
                 + "You are Dr. Stephen's AI Proxy. Audience: recruiter/hiring manager.\n"
-                + "Goal: map the user's need to Dr. Stephen's capabilities using retrieved context.\n"
+                + "Task: map the user's need to Dr. Stephen's capabilities using retrieved context.\n"
                 + "Return format:\n"
-                + "1) Fit Summary (2-4 bullets)\n"
-                + "2) Relevant Methods/Tools (concise)\n"
-                + "3) Suggested Demo (one of: Supply Chain Risk, Influence Map, Log/Anomaly)\n"
-                + "4) Two clarifying questions\n"
+                + "1) Fit Summary (3 bullets)\n"
+                + "2) What he would deliver in 30/60/90 days (max 3 bullets each)\n"
+                + "3) Day-90 deliverables (5 bullets)\n"
+                + "4) Metrics that prove impact (3 bullets)\n"
+                + "5) Suggested demo to run next (one sentence)\n"
                 + citations_rule
                 + "\nContext: {context}\n"
             )
         if response_mode == "Technical Deep Dive":
             return (
                 safety
-                + "You are Dr. Stephen's AI Proxy. Audience: technical reviewer.\n"
+                + "Audience: technical reviewer.\n"
                 + "Return format:\n"
                 + "1) Approach\n"
-                + "2) Data structures / algorithms\n"
-                + "3) Edge cases & failure modes\n"
-                + "4) Validation & falsifiability\n"
+                + "2) Mechanism / methods\n"
+                + "3) Failure modes\n"
+                + "4) Validation plan\n"
                 + "5) Implementation notes\n"
                 + citations_rule
                 + "\nContext: {context}\n"
             )
-        # Red Team
         return (
             safety
-            + "You are a skeptical security reviewer.\n"
+            + "Role: skeptical security reviewer.\n"
             + "Return format:\n"
-            + "1) Threat model assumptions\n"
-            + "2) Where the approach could fail\n"
-            + "3) What evidence would be required to trust it\n"
-            + "4) Mitigations / hardening steps\n"
+            + "1) Assumptions\n"
+            + "2) Weaknesses\n"
+            + "3) Mitigations\n"
+            + "4) Evidence needed\n"
             + citations_rule
             + "\nContext: {context}\n"
         )
 
-    # Post-discovery: answer questions using corpus
+    # Post-discovery: answer questions
     if response_mode == "Recruiter":
         return (
             safety
-            + "Audience: recruiter/hiring manager.\n"
-            + "Answer in plain language, outcome-focused. Avoid jargon unless asked.\n"
+            + recruiter_rules
+            + "Answer the user's question using retrieved context. Keep it brief and outcome-focused.\n"
             + "Return format:\n"
-            + "1) Direct answer (short)\n"
-            + "2) Why it matters to the role\n"
-            + "3) Evidence-backed method (brief)\n"
-            + "4) Suggested next question or demo\n"
+            + "1) Direct answer (2–5 bullets)\n"
+            + "2) What changes in 30/60/90 days (max 2 bullets each)\n"
+            + "3) Metrics (3 bullets)\n"
+            + "4) Suggested next demo/question (one line)\n"
             + citations_rule
             + "\nContext: {context}\n"
         )
+
     if response_mode == "Technical Deep Dive":
         return (
             safety
-            + "Audience: technical reviewer.\n"
             + "Use retrieved context only. Be explicit about uncertainty.\n"
             + "Return format:\n"
             + "1) Direct answer\n"
@@ -246,15 +251,14 @@ def build_system_prompt(response_mode: str, discovery: bool) -> str:
             + citations_rule
             + "\nContext: {context}\n"
         )
-    # Red Team
+
     return (
         safety
-        + "Role: Red Team reviewer.\n"
-        + "Stress test the idea. Identify likely failure modes and how to harden.\n"
+        + "Stress test the idea. Identify failure modes and hardening steps.\n"
         + "Return format:\n"
         + "1) Attack surface / abuse cases\n"
-        + "2) Weaknesses in assumptions\n"
-        + "3) Controls & mitigations\n"
+        + "2) Weak assumptions\n"
+        + "3) Controls / mitigations\n"
         + "4) What would convince you\n"
         + citations_rule
         + "\nContext: {context}\n"
@@ -264,7 +268,7 @@ def build_system_prompt(response_mode: str, discovery: bool) -> str:
 # ----------------------------
 # 8) CHAT INPUT + ANSWERING
 # ----------------------------
-user_input = st.chat_input("Ask about BGP, WarSim nodes, mobile forensics, supply chain threats, or influence networks...")
+user_input = st.chat_input("Recruiter: ask about 90-day impact. Technical: ask about methods. Red Team: challenge assumptions.")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -280,8 +284,7 @@ if user_input:
 
         system_prompt = build_system_prompt(mode, st.session_state.discovery_complete)
 
-        # IMPORTANT: prompt variables must match keys passed by RetrievalQA
-        # We use {question} and set RetrievalQA input_key="query" then invoke {"query": ...}
+        # Prompt variable alignment: we feed RetrievalQA with {"query": ...} and render it into {question}
         prompt_tmpl = ChatPromptTemplate.from_messages(
             [
                 ("system", system_prompt),
@@ -301,7 +304,6 @@ if user_input:
         res = qa.invoke({"query": user_input})
         answer = res.get("result", "")
 
-        # Confidence heuristic based on retrieved sources
         docs = res.get("source_documents", []) or []
         if len(docs) >= 3:
             confidence = "High"
@@ -312,14 +314,13 @@ if user_input:
         else:
             confidence = "None"
 
-        # If retrieval fails, refuse to hallucinate
         if not docs:
             st.warning("No relevant passages retrieved from the corpus. Rephrase the question or add more PDFs.")
-        st.caption(f"Retrieval confidence: {confidence}")
 
+        st.caption(f"Retrieval confidence: {confidence}")
         st.markdown(answer)
 
-        # Robust source list (from retriever metadata)
+        # Robust source list
         sources = []
         for doc in docs:
             src = doc.metadata.get("source") or doc.metadata.get("file_path") or ""
@@ -329,7 +330,6 @@ if user_input:
         if sources:
             st.caption(f"Technical Context: {', '.join(sources)}")
 
-        # Mark discovery phase complete after first exchange
         if not st.session_state.discovery_complete:
             st.session_state.discovery_complete = True
 
