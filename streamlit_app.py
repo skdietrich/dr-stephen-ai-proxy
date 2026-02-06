@@ -4,7 +4,7 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
-# Final corrected import for LangChain 0.3+
+# Using the modern LangChain 0.3+ LCEL (LangChain Expression Language) imports
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
@@ -24,7 +24,7 @@ BOOK_MAP = {
     "Ai_War_Sim_Risk_Analysis.pdf": {
         "title": "AI Chatbots as National Security Risks",
         "link": "https://www.stahltek.com/war-sim",
-        "desc": "Technical analysis of predictive modeling vulnerabilities and WarSim v5.6."
+        "desc": "Technical analysis of predictive modeling vulnerabilities and WarSim v5.6 outputs."
     }
 }
 
@@ -37,6 +37,7 @@ def init_knowledge_base():
     loader = PyPDFDirectoryLoader("data/")
     docs = loader.load()
     
+    # Text splitting for technical granularity
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
     
@@ -48,25 +49,21 @@ def init_knowledge_base():
 st.set_page_config(page_title="Dr. Stephen | Strategic Proxy", layout="wide")
 retriever = init_knowledge_base()
 
-# --- 3. SIDEBAR: CREDENTIALS & LIVE METHODOLOGY PROOFS ---
+# --- 3. SIDEBAR: OPERATIONAL TOOLS ---
 with st.sidebar:
-    st.header("🛡️ Strategic Profile")
-    st.markdown("""
-    **Dr. Stephen Dietrich-Kolokouris** *PhD, History | Military Systems Analyst*
-
-    Bridging the gap between **human behavioral history** and **cyber-kinetic warfare**. 
-    """)
+    st.header("🛡️ Credentials")
+    st.info("**Dr. Stephen Dietrich-Kolokouris**\n\nPhD, History | Military Systems Analyst")
     
-    st.header("⚡ Live Methodology Proofs")
+    st.header("⚡ Live Proofs")
     
     with st.expander("🛠️ Supply Chain Risk Assessment"):
         st.caption("Operationalizing 'Silent Weapons' (2025)")
         v_origin = st.selectbox("Vendor Origin", ["Domestic", "Allied/NATO", "Strategic Competitor"])
-        firmware = st.checkbox("Vendor manages OTA Firmware Updates")
-        if st.button("Calculate Risk Vector"):
+        firmware = st.checkbox("Vendor manages OTA Updates")
+        if st.button("Analyze Risk Vector"):
             score = 10 if v_origin == "Strategic Competitor" else 2
             if firmware: score *= 1.5
-            st.warning(f"Calculated Risk Score: {score}/15")
+            st.warning(f"Risk Score: {score}/15")
 
     with st.expander("⚔️ WarSim Strategic Sandbox"):
         st.caption("JSON-Defined Kinetic Modeling")
@@ -78,7 +75,7 @@ with st.sidebar:
             else: st.success("Outcome: Stalemate")
 
     st.markdown("---")
-    st.header("📚 Recommended Publications")
+    st.header("📚 Recommended Reading")
     for file, info in BOOK_MAP.items():
         with st.expander(f"📖 {info['title']}"):
             st.write(info['desc'])
@@ -92,12 +89,12 @@ if "messages" not in st.session_state:
 if "discovery_complete" not in st.session_state:
     st.session_state.discovery_complete = False
 
-# Chat display
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Describe your needs or ask a technical question..."):
+if prompt := st.chat_input("Ask a question about Dr. Stephen's research..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -105,21 +102,23 @@ if prompt := st.chat_input("Describe your needs or ask a technical question...")
     with st.chat_message("assistant"):
         llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
         
+        # Identity Logic
         if not st.session_state.discovery_complete:
-            system_prompt = (
-                "You are Dr. Stephen's AI Chief of Staff. Identify which research (WarSim v5.6, Silent Weapons, Behind the Mask) "
-                f"addresses the user's need: {prompt}. Answer as a senior strategist."
+            system_prompt_str = (
+                "You are Dr. Stephen's AI Chief of Staff. Using the provided context, identify "
+                f"which papers address the user's specific need: {prompt}. Then invite "
+                "deeper technical questions about his methodology."
             )
             st.session_state.discovery_complete = True
         else:
-            system_prompt = (
-                "Answer using the research corpus. Cite specific papers. "
-                "Refer to 'Behind the Mask' for social influence and 'Silent Weapons' for hardware threats. "
-                "Context: {context}\n\nQuestion: {input}"
+            system_prompt_str = (
+                "Answer technical questions using the research corpus. "
+                "Refer to 'Behind the Mask' for social behavior/hypocrisy, 'Silent Weapons' for hardware/ROM threats, "
+                "and 'WarSim' for AI modeling risks. Use context: {context}\n\nQuestion: {input}"
             )
 
-        # Updated Chain Logic for LangChain 0.3+
-        prompt_template = ChatPromptTemplate.from_template(system_prompt)
+        # Build Retrieval Chain (LangChain 0.3 standard)
+        prompt_template = ChatPromptTemplate.from_template(system_prompt_str)
         combine_docs_chain = create_stuff_documents_chain(llm, prompt_template)
         rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
         
