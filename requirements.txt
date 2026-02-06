@@ -1,9 +1,7 @@
 streamlit
-langchain>=1.0.0
-langchain-classic
+langchain
 langchain-openai
 langchain-community
-langchain-text-splitters
 pypdf
 faiss-cpu
 tiktoken
