@@ -1,274 +1,182 @@
-import os
 import streamlit as st
+import os
+import pandas as pd
+
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import RetrievalQA
 
-# ----------------------------
-# 1) CORE CONFIGURATION
-# ----------------------------
-st.set_page_config(page_title="Dr. Stephen Dietrich-Kolokouris ", layout="wide")
+# Deterministic calculator modules (add these files to repo root)
+from scoring import score_overall
+from mitigations import tier_from_score, mitigation_playbook
 
-DATA_DIR = "data"
-INDEX_DIR = "faiss_index"  # persisted FAISS index directory
+# --- 1. CORE CONFIGURATION ---
+st.set_page_config(page_title="Dr. Stephen | skdietrich Proxy", layout="wide")
 
-
-# ----------------------------
-# 2) UI POLISH (NO EXTRA DEPS)
-# ----------------------------
-st.markdown(
-    """
-<style>
-.badge {
-  display:inline-block; padding:0.2rem 0.55rem; border-radius:0.6rem;
-  border:1px solid rgba(255,255,255,0.18); margin-right:0.4rem;
-  font-size: 0.85rem;
-}
-.subtle { opacity: 0.85; }
-.small { font-size: 0.9rem; opacity: 0.92; }
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    "<span class='badge'>RAG</span>"
-    "<span class='badge'>FAISS</span>"
-    "<span class='badge'>Streamlit</span>"
-    "<span class='badge'>Recruiter-Safe</span>"
-    "<span class='badge'>Evidence-Linked</span>",
-    unsafe_allow_html=True,
-)
-
-
-# ----------------------------
-# 3) KNOWLEDGE BASE (STABLE, CACHED)
-# ----------------------------
+# --- 2. THE MULTI-DOMAIN KNOWLEDGE BASE (CCIE, FORENSICS, WARSIM, PhD) ---
 @st.cache_resource
 def init_knowledge_base():
-    if not os.path.exists(DATA_DIR):
-        st.error("Infrastructure Error: 'data' folder not found. Commit PDFs to /data.")
+    if not os.path.exists("data"):
+        st.error("Infrastructure Error: 'data' folder not found. Ensure PDFs are committed to /data.")
         st.stop()
 
-    loader = PyPDFDirectoryLoader(DATA_DIR)
+    loader = PyPDFDirectoryLoader("data/")
     documents = loader.load()
 
     if not documents:
-        st.error("No PDFs found in /data. Add your corpus PDFs to the repo /data directory.")
+        st.error("No intelligence assets found. Please upload PDFs to /data.")
         st.stop()
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    chunks = splitter.split_documents(documents)
+    # Granular splitting to preserve configs and dense research
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    texts = text_splitter.split_documents(documents)
 
+    # Stable OpenAI embeddings
     embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
 
-    if os.path.exists(INDEX_DIR):
-        with st.status("⚡ Loading cached vector index...", expanded=False) as status:
-            vectorstore = FAISS.load_local(
-                INDEX_DIR,
-                embeddings,
-                allow_dangerous_deserialization=True,
-            )
-            status.update(label="✅ Index loaded", state="complete")
-    else:
-        with st.status("🔗 Building vector index (first run)...", expanded=False) as status:
-            vectorstore = FAISS.from_documents(chunks, embeddings)
-            vectorstore.save_local(INDEX_DIR)
-            status.update(label="✅ Index built and cached", state="complete")
+    with st.status("🔗 Operationalizing Cross-Domain Intelligence...", expanded=False) as status:
+        vectorstore = FAISS.from_documents(texts, embeddings)
+        status.update(label="✅ Proxy Online: All Skill Sets Synced", state="complete")
 
-    # MMR retrieval reduces redundancy
-    return vectorstore.as_retriever(
-        search_type="mmr",
-        search_kwargs={"k": 6, "fetch_k": 20, "lambda_mult": 0.6},
-    )
+    return vectorstore.as_retriever(search_kwargs={"k": 5})
 
-
+# Initialize Proxy
 retriever = init_knowledge_base()
 
-
-# ----------------------------
-# 4) SIDEBAR CONTROLS
-# ----------------------------
+# --- 3. SIDEBAR: MULTI-SYSTEM STRESS TEST + SUPPLY CHAIN RISK CALCULATOR ---
 with st.sidebar:
     st.header("🛡️ Dr. Stephen Dietrich-Kolokouris")
     st.markdown("**PhD | CCIE #2482 | Data Engineer**")
-    st.caption("Supply Chain | AI Risk | Forensics | Network Analysis")
 
     st.divider()
+    st.header("🏢 System Entropy Simulator")
+    domain = st.selectbox("Select Domain", ["Network (BGP/VXLAN)", "Forensics (MDFTs)", "Strategic (WarSim)", "History/C2"])
+    chaos = st.slider("Information Entropy Level (H)", 0.0, 8.0, 2.4)
 
-    st.header("🎛️ Response Mode")
-    mode = st.radio(
-        "Choose output style",
-        ["Recruiter", "Technical Deep Dive", "Red Team"],
-        index=0,
-    )
-
-    st.divider()
-
-    st.header("🔎 Retrieval Controls")
-    k = st.slider("Top-K chunks", 3, 10, 6)
-    retriever.search_kwargs["k"] = k
-
-    st.divider()
-
-    st.header("🏢 System Stress Dial")
-    domain = st.selectbox(
-        "Domain",
-        ["Supply Chain", "Enterprise Network", "Forensics/IR", "Strategic Modeling"],
-    )
-    stress = st.slider("Risk pressure", 0.0, 10.0, 3.0)
-
-    if st.button("Quick readout"):
-        if stress > 7.5:
-            st.error(f"High risk pressure in {domain}: containment and integrity controls first.")
+    if st.button("Analyze Resilience"):
+        if chaos > 6.0:
+            st.error(f"CRITICAL FAILURE: {domain} Stability Compromised")
+            st.write("Root Cause: High entropy prevents deterministic recovery.")
         else:
-            st.success(f"Stable posture in {domain}: continue hardening and verification.")
+            st.success(f"System Operational: {domain} H={chaos}")
 
     st.divider()
-    st.caption(
-        "Scope policy: no secrets/credentials/classified details. "
-        "Public methods, evidence, and demonstrable artifacts only."
-    )
+    st.caption("WarSim v5.6 | Silent Weapons | CCIE #2482")
 
+    # --- Supply Chain Risk Calculator (deterministic tool layer) ---
+    st.divider()
+    st.header("🧮 Supply Chain Risk Calculator")
 
-# ----------------------------
-# 5) MAIN APP HEADER
-# ----------------------------
+    weight_fw = st.slider("Weight: Firmware Integrity", 0.0, 1.0, 0.55, 0.05)
+    st.caption(f"Weight: REE Concentration = {1.0 - weight_fw:.2f}")
+
+    with st.expander("Upload vendor CSV → score → send to Proxy", expanded=False):
+        uploaded_csv = st.file_uploader("Vendor CSV", type=["csv"], key="vendor_csv_uploader")
+
+        st.caption(
+            "Required columns: vendor_name, product_or_component, component_class, origin_jurisdiction, criticality, "
+            "contains_ree_magnets, firmware_ota, firmware_signing, secure_boot_attestation, sbom_available, "
+            "remote_admin_access, telemetry_logging, alt_supplier_available, known_single_point_of_failure"
+        )
+
+        if uploaded_csv is not None:
+            try:
+                df = pd.read_csv(uploaded_csv)
+            except Exception as e:
+                st.error(f"Unable to read CSV: {e}")
+                df = None
+
+            if df is not None:
+                required_cols = {
+                    "vendor_name",
+                    "product_or_component",
+                    "component_class",
+                    "origin_jurisdiction",
+                    "criticality",
+                    "contains_ree_magnets",
+                    "firmware_ota",
+                    "firmware_signing",
+                    "secure_boot_attestation",
+                    "sbom_available",
+                    "remote_admin_access",
+                    "telemetry_logging",
+                    "alt_supplier_available",
+                    "known_single_point_of_failure",
+                }
+                missing = sorted(list(required_cols - set(df.columns)))
+                if missing:
+                    st.error(f"CSV missing required columns: {missing}")
+                else:
+                    def _score(r):
+                        s = score_overall(r.to_dict(), weight_fw=weight_fw)
+                        return pd.Series(s)
+
+                    scores = df.apply(_score, axis=1)
+                    out = pd.concat([df, scores], axis=1)
+                    out["tier"] = out["overall_risk"].apply(tier_from_score)
+
+                    st.markdown("**Top 10 highest-risk rows**")
+                    st.dataframe(out.sort_values("overall_risk", ascending=False).head(10), use_container_width=True)
+
+                    i = st.number_input(
+                        "Select row index (0-based)",
+                        min_value=0,
+                        max_value=max(0, len(out) - 1),
+                        value=0,
+                        step=1,
+                        key="vendor_row_idx",
+                    )
+                    row = out.iloc[int(i)].to_dict()
+
+                    # Preview selected row
+                    st.markdown("**Selected row**")
+                    st.write(
+                        {
+                            "vendor_name": row.get("vendor_name"),
+                            "product_or_component": row.get("product_or_component"),
+                            "component_class": row.get("component_class"),
+                            "origin_jurisdiction": row.get("origin_jurisdiction"),
+                            "criticality": row.get("criticality"),
+                            "contains_ree_magnets": row.get("contains_ree_magnets"),
+                            "ree_risk": float(row.get("ree_risk", 0.0)),
+                            "firmware_risk": float(row.get("firmware_risk", 0.0)),
+                            "overall_risk": float(row.get("overall_risk", 0.0)),
+                            "tier": row.get("tier"),
+                        }
+                    )
+
+                    if st.button("✅ Use this vendor in RAG Proxy", key="send_vendor_to_proxy"):
+                        st.session_state.selected_vendor_context = {
+                            "vendor_name": row.get("vendor_name"),
+                            "product_or_component": row.get("product_or_component"),
+                            "component_class": row.get("component_class"),
+                            "origin_jurisdiction": row.get("origin_jurisdiction"),
+                            "criticality": row.get("criticality"),
+                            "contains_ree_magnets": row.get("contains_ree_magnets"),
+                            "ree_risk": float(row.get("ree_risk", 0.0)),
+                            "firmware_risk": float(row.get("firmware_risk", 0.0)),
+                            "overall_risk": float(row.get("overall_risk", 0.0)),
+                            "tier": row.get("tier"),
+                            "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
+                        }
+                        st.success("Vendor context stored. Ask a question in the chat (the Proxy will incorporate this).")
+
+# --- 4. THE CHAT ENGINE (STABLE RETRIEVALQA) ---
 st.title("🛡️ Dr. Stephen Proxy: Integrated Intelligence")
-st.markdown(
-    "<div class='subtle'> Recruiter-safe by default.</div>",
-    unsafe_allow_html=True,
-)
+st.markdown("#### Expertise: Networking, Forensics, Data Engineering, & Strategic History")
 
-
-# ----------------------------
-# 6) CHAT STATE
-# ----------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "discovery_complete" not in st.session_state:
-    st.session_state.discovery_complete = False
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+# Show chat history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-
-# ----------------------------
-# 7) PROMPT FACTORY (RECRUITER FIX)
-# ----------------------------
-def build_system_prompt(response_mode: str, discovery: bool) -> str:
-    safety = (
-        "Security policy:\n"
-        "- Do not reveal secrets, credentials, private keys, or classified work.\n"
-        "- If asked about classified work: refuse briefly and redirect to public methodology.\n"
-        "- Do not invent facts; if the corpus is insufficient, say so.\n"
-        "- Avoid step-by-step wrongdoing or exploit instructions.\n"
-    )
-
-    citations_rule = (
-        "Requirement:\n"
-        "- End with a line starting exactly with 'Citations:' followed by a comma-separated list of PDF filenames used.\n"
-        "- Only list filenames that appear in retrieved context.\n"
-    )
-
-    recruiter_rules = (
-        "Recruiter readability rules:\n"
-        "- Use plain language and outcomes.\n"
-        "- Do NOT lead with acronyms or niche tools. If technical depth is needed, add a short optional 'Technical detail (optional)' section.\n"
-        "- Prefer concrete deliverables, sequencing, and metrics.\n"
-    )
-
-    if not discovery:
-        if response_mode == "Recruiter":
-            return (
-                safety
-                + recruiter_rules
-                + "You are Dr. Stephen's AI Proxy. Audience: recruiter/hiring manager.\n"
-                + "Task: map the user's need to Dr. Stephen's capabilities using retrieved context.\n"
-                + "Return format:\n"
-                + "1) Fit Summary (3 bullets)\n"
-                + "2) What he would deliver in 30/60/90 days (max 3 bullets each)\n"
-                + "3) Day-90 deliverables (5 bullets)\n"
-                + "4) Metrics that prove impact (3 bullets)\n"
-                + "5) Suggested demo to run next (one sentence)\n"
-                + citations_rule
-                + "\nContext: {context}\n"
-            )
-        if response_mode == "Technical Deep Dive":
-            return (
-                safety
-                + "Audience: technical reviewer.\n"
-                + "Return format:\n"
-                + "1) Approach\n"
-                + "2) Mechanism / methods\n"
-                + "3) Failure modes\n"
-                + "4) Validation plan\n"
-                + "5) Implementation notes\n"
-                + citations_rule
-                + "\nContext: {context}\n"
-            )
-        return (
-            safety
-            + "Role: skeptical security reviewer.\n"
-            + "Return format:\n"
-            + "1) Assumptions\n"
-            + "2) Weaknesses\n"
-            + "3) Mitigations\n"
-            + "4) Evidence needed\n"
-            + citations_rule
-            + "\nContext: {context}\n"
-        )
-
-    # Post-discovery: answer questions
-    if response_mode == "Recruiter":
-        return (
-            safety
-            + recruiter_rules
-            + "Answer the user's question using retrieved context. Keep it brief and outcome-focused.\n"
-            + "Return format:\n"
-            + "1) Direct answer (2–5 bullets)\n"
-            + "2) What changes in 30/60/90 days (max 2 bullets each)\n"
-            + "3) Metrics (3 bullets)\n"
-            + "4) Suggested next demo/question (one line)\n"
-            + citations_rule
-            + "\nContext: {context}\n"
-        )
-
-    if response_mode == "Technical Deep Dive":
-        return (
-            safety
-            + "Use retrieved context only. Be explicit about uncertainty.\n"
-            + "Return format:\n"
-            + "1) Direct answer\n"
-            + "2) Mechanism / method\n"
-            + "3) Implementation details\n"
-            + "4) Validation strategy\n"
-            + "5) Limitations\n"
-            + citations_rule
-            + "\nContext: {context}\n"
-        )
-
-    return (
-        safety
-        + "Stress test the idea. Identify failure modes and hardening steps.\n"
-        + "Return format:\n"
-        + "1) Attack surface / abuse cases\n"
-        + "2) Weak assumptions\n"
-        + "3) Controls / mitigations\n"
-        + "4) What would convince you\n"
-        + citations_rule
-        + "\nContext: {context}\n"
-    )
-
-
-# ----------------------------
-# 8) CHAT INPUT + ANSWERING
-# ----------------------------
-user_input = st.chat_input("Recruiter: ask about 90-day impact. Technical: ask about methods. Red Team: challenge assumptions.")
+user_input = st.chat_input("Ask about BGP, WarSim nodes, Mobile Forensics, Historical C2, or a selected vendor...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -279,59 +187,75 @@ if user_input:
         llm = ChatOpenAI(
             model="gpt-4o",
             temperature=0,
-            api_key=st.secrets["OPENAI_API_KEY"],
+            api_key=st.secrets["OPENAI_API_KEY"]
         )
 
-        system_prompt = build_system_prompt(mode, st.session_state.discovery_complete)
+        # Optional vendor context injected (deterministic tool output)
+        vendor_ctx = st.session_state.get("selected_vendor_context")
+        vendor_block = ""
+        if vendor_ctx:
+            vendor_block = (
+                "\n\nSelected Vendor Risk Context (deterministic tool output):\n"
+                f"- Vendor: {vendor_ctx.get('vendor_name')}\n"
+                f"- Component: {vendor_ctx.get('product_or_component')}\n"
+                f"- Class: {vendor_ctx.get('component_class')}\n"
+                f"- Origin/Jurisdiction: {vendor_ctx.get('origin_jurisdiction')}\n"
+                f"- Criticality: {vendor_ctx.get('criticality')}\n"
+                f"- Tier: {vendor_ctx.get('tier')}\n"
+                f"- Scores (0–20): REE={vendor_ctx.get('ree_risk')}, FW={vendor_ctx.get('firmware_risk')}, Overall={vendor_ctx.get('overall_risk')}\n"
+                "Mitigation priorities:\n"
+                + "\n".join([f"- {m}" for m in vendor_ctx.get("mitigations", [])])
+                + "\n"
+            )
 
-        # Prompt variable alignment: we feed RetrievalQA with {"query": ...} and render it into {question}
-        prompt_tmpl = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                ("human", "{question}"),
-            ]
+        # FIXED: explicit prompt keys {context} and {question}
+        system_prompt = (
+            "You are Dr. Stephen's AI Proxy (CCIE #2482 / PhD). "
+            "Your knowledge base includes CCIE networking, Digital Forensics, WarSim Data Engineering, and Historical C2 Analysis. "
+            "When answering:\n"
+            "1. TECHNICAL/DATA ANALYSIS: Reference CCIE protocols (BGP/VXLAN) or Data Engineering metrics (ETL/WarSim nodes).\n"
+            "2. FORENSIC/SECURITY LENS: Mention MDFTs, Magnet Forensics, incident response patterns.\n"
+            "3. STRATEGIC/HISTORICAL CONTEXT: Correlate with Information Entropy or historical C2 patterns.\n"
+            "4. CORPORATE IMPACT: Apply the Purdue Model or Logistics Resilience metrics.\n"
+            "\nRules:\n"
+            "- Do not invent citations. Use retrieved PDFs as evidence.\n"
+            "- If vendor context is provided, map recommendations to the given tier and scores.\n"
+            "- Provide do-first / do-next / do-later actions when appropriate.\n"
+            "\nContext: {context}"
+            + vendor_block
         )
 
+        prompt_tmpl = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "{question}"),
+        ])
+
+        # STABLE RetrievalQA: fixed input mapping
         qa = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
             retriever=retriever,
             return_source_documents=True,
             chain_type_kwargs={"prompt": prompt_tmpl},
-            input_key="query",
+            input_key="query"  # maps invoke({"query": ...})
         )
 
         res = qa.invoke({"query": user_input})
-        answer = res.get("result", "")
+        answer = res["result"]
 
-        docs = res.get("source_documents", []) or []
-        if len(docs) >= 3:
-            confidence = "High"
-        elif len(docs) == 2:
-            confidence = "Medium"
-        elif len(docs) == 1:
-            confidence = "Low"
-        else:
-            confidence = "None"
+        # Robust, programmatic citations from retrieved PDFs
+        sources = sorted(set(
+            os.path.basename(doc.metadata.get("source", ""))
+            for doc in res.get("source_documents", [])
+            if doc.metadata.get("source")
+        ))
 
-        if not docs:
-            st.warning("No relevant passages retrieved from the corpus. Rephrase the question or add more PDFs.")
+        # Strip model-generated "Citations:" lines if any exist
+        lines = [ln for ln in answer.splitlines() if not ln.strip().lower().startswith("citations:")]
+        answer = "\n".join(lines).strip()
 
-        st.caption(f"Retrieval confidence: {confidence}")
-        st.markdown(answer)
-
-        # Robust source list
-        sources = []
-        for doc in docs:
-            src = doc.metadata.get("source") or doc.metadata.get("file_path") or ""
-            if src:
-                sources.append(os.path.basename(src))
-        sources = sorted(set(sources))
         if sources:
-            st.caption(f"Technical Context: {', '.join(sources)}")
+            answer += "\n\nCitations: " + ", ".join(sources)
 
-        if not st.session_state.discovery_complete:
-            st.session_state.discovery_complete = True
-
-    st.session_state.messages.append({"role": "assistant", "content": answer})
-
+        st.markdown(answer)
+        st.session_state.messages.append({"role": "assistant", "content": answer})
