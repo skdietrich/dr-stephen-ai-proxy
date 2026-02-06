@@ -10,7 +10,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 
-# Prompt template import compatibility (LangChain moved these over time)
+# Prompt template import compatibility
 try:
     from langchain_core.prompts import ChatPromptTemplate
 except Exception:
@@ -48,7 +48,7 @@ def enforce_no_external_refs(text: str) -> str:
 
 
 # =========================
-# Streamlit config + "Lockheed-esque" UI skin (CSS)
+# Streamlit config + “defense contractor” skin (CSS)
 # =========================
 st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris, PhD | Strategic Proxy",
@@ -59,7 +59,6 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-/* ---------- Global ---------- */
 :root{
   --bg0:#070A12;
   --bg1:#0B1020;
@@ -71,40 +70,36 @@ st.markdown(
   --accent2:#22C55E;
 }
 
+/* Page background */
 html, body, [class*="stApp"]{
   background: radial-gradient(1200px 900px at 20% 0%, #0B1020 0%, #070A12 50%, #05060A 100%) !important;
   color: var(--txt) !important;
 }
 
-/* Reduce Streamlit top padding */
-.main .block-container { padding-top: 1.2rem; }
+/* Layout padding */
+.main .block-container { padding-top: 1.0rem; padding-bottom: 2.0rem; }
 
-/* ---------- Sidebar ---------- */
+/* Sidebar */
 section[data-testid="stSidebar"]{
   background: linear-gradient(180deg, rgba(11,16,32,0.92) 0%, rgba(5,6,10,0.92) 100%) !important;
   border-right: 1px solid var(--line);
 }
-section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] label{
-  color: var(--txt) !important;
-}
 
-/* ---------- Cards ---------- */
+/* Cards */
 .dk-card{
   background: linear-gradient(180deg, rgba(15,23,42,0.90) 0%, rgba(2,6,23,0.70) 100%);
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
-
 .dk-hero{
   background: linear-gradient(135deg, rgba(96,165,250,0.14) 0%, rgba(34,197,94,0.08) 55%, rgba(15,23,42,0.65) 100%);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 18px 20px;
+  padding: 16px 18px;
   box-shadow: 0 12px 34px rgba(0,0,0,0.42);
 }
-
 .dk-title{
   font-size: 1.55rem;
   font-weight: 700;
@@ -117,11 +112,19 @@ section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] l
   margin-bottom: 0;
 }
 
-/* Chat bubbles slightly tighter */
+/* Chat message chrome */
 [data-testid="stChatMessage"]{
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(15,23,42,0.55);
+}
+
+/* Make expanders feel more “panel-like” */
+[data-testid="stExpander"]{
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(15,23,42,0.35);
 }
 </style>
 """,
@@ -130,20 +133,11 @@ section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] l
 
 
 # =========================
-# Branding: LinkedIn + assets
+# Branding assets
 # =========================
 LINKEDIN_URL = "https://www.linkedin.com/in/stephendietrich-kolokouris/"
 
 def find_logo_path() -> str | None:
-    """
-    Put your logo in ONE of these paths:
-      - ./assets/logo.png
-      - ./assets/logo.jpg
-      - ./assets/logo.jpeg
-      - ./logo.png
-      - ./logo.jpg
-      - ./logo.jpeg
-    """
     candidates = [
         os.path.join("assets", "logo.png"),
         os.path.join("assets", "logo.jpg"),
@@ -166,7 +160,7 @@ LOGO_PATH = find_logo_path()
 @st.cache_resource
 def init_knowledge_base():
     if not os.path.exists("data"):
-        st.error("Missing **/data** directory. Commit/upload your PDFs into `/data`.")
+        st.error("Missing **/data** directory. Upload/commit PDFs into `/data`.")
         st.stop()
 
     loader = PyPDFDirectoryLoader("data/")
@@ -179,7 +173,7 @@ def init_knowledge_base():
     splitter = RecursiveCharacterTextSplitter(chunk_size=1100, chunk_overlap=160)
     chunks = splitter.split_documents(docs)
 
-    # Embeddings init compatibility (api_key vs openai_api_key depending on package version)
+    # Embeddings compatibility
     try:
         embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
     except TypeError:
@@ -187,16 +181,15 @@ def init_knowledge_base():
 
     with st.status("Indexing corpus (FAISS)…", expanded=False) as status:
         vectorstore = FAISS.from_documents(chunks, embeddings)
-        status.update(label="✅ Corpus indexed (FAISS ready)", state="complete")
+        status.update(label="✅ Corpus indexed", state="complete")
 
     return vectorstore.as_retriever(search_kwargs={"k": 7})
-
 
 retriever = init_knowledge_base()
 
 
 # =========================
-# Sidebar
+# Sidebar (clean: brand + notice + expanders)
 # =========================
 with st.sidebar:
     if LOGO_PATH:
@@ -204,49 +197,45 @@ with st.sidebar:
 
     st.markdown("### Dr. Stephen Dietrich-Kolokouris")
     st.caption("Applied Security • Systems Analysis • Data Engineering • Strategic Modeling")
-
     st.link_button("LinkedIn Profile", LINKEDIN_URL, use_container_width=True)
 
     st.info(
         "🔒 **Public-Safe / Evidence-Only**\n\n"
-        "Responses are generated exclusively from the loaded corpus. "
-        "If a claim cannot be supported, the response will say **Not in corpus**.",
+        "Answers are generated exclusively from the loaded corpus. "
+        "Unsupported claims return **Not in corpus** (briefly).",
         icon="🔐",
     )
 
-    st.divider()
-    st.markdown("#### Operational Readiness Controls")
-    st.markdown(
-        "- **Evidence-based retrieval (RAG)**\n"
-        "- **Audit-forward outputs (source traceability)**\n"
-        "- **Restricted-environment discipline**\n"
-        "- **Deterministic scoring** (optional module)"
-    )
+    with st.expander("Operational Controls", expanded=False):
+        st.markdown(
+            "- **Evidence-based retrieval (RAG)**\n"
+            "- **Audit-forward outputs (source traceability)**\n"
+            "- **Restricted-environment discipline**\n"
+            "- **Deterministic scoring** (optional module)"
+        )
 
-    st.divider()
-    st.markdown("#### Resilience & Degradation Simulator")
-    domain = st.selectbox(
-        "System domain",
-        ["Network (BGP/VXLAN)", "Forensics (MDFTs)", "Strategic (WarSim)", "History/C2"],
-        key="domain_select",
-    )
-    chaos = st.slider("Entropy / Disorder Index (H)", 0.0, 8.0, 2.4, key="entropy_slider")
-    if st.button("Run resilience check", key="resilience_btn"):
-        if chaos > 6.0:
-            st.error(f"High-risk degradation: {domain}")
-            st.caption("Interpretation: elevated entropy reduces deterministic recovery and increases uncertainty.")
-        else:
-            st.success(f"Operationally stable: {domain} | H={chaos:.1f}")
+    with st.expander("Tools", expanded=False):
+        st.markdown("**Resilience & Degradation Simulator**")
+        domain = st.selectbox(
+            "System domain",
+            ["Network (BGP/VXLAN)", "Forensics (MDFTs)", "Strategic (WarSim)", "History/C2"],
+            key="domain_select",
+        )
+        chaos = st.slider("Entropy / Disorder Index (H)", 0.0, 8.0, 2.4, key="entropy_slider")
+        if st.button("Run resilience check", key="resilience_btn"):
+            if chaos > 6.0:
+                st.error(f"High-risk degradation: {domain}")
+                st.caption("Interpretation: elevated entropy reduces deterministic recovery and increases uncertainty.")
+            else:
+                st.success(f"Operationally stable: {domain} | H={chaos:.1f}")
 
     if SCORING_ENABLED:
-        st.divider()
-        st.markdown("#### Supply Chain Risk Assessment")
-        st.caption("Deterministic scoring → mitigations (only when used)")
+        with st.expander("Vendor Risk (optional)", expanded=False):
+            st.caption("Deterministic scoring → mitigations (only used when requested)")
 
-        weight_fw = st.slider("Weight: Firmware integrity", 0.0, 1.0, 0.55, 0.05, key="weight_fw")
-        st.caption(f"Weight: REE concentration = {1.0 - weight_fw:.2f}")
+            weight_fw = st.slider("Weight: Firmware integrity", 0.0, 1.0, 0.55, 0.05, key="weight_fw")
+            st.caption(f"Weight: REE concentration = {1.0 - weight_fw:.2f}")
 
-        with st.expander("Upload vendor CSV → score → store context", expanded=False):
             uploaded_csv = st.file_uploader("Vendor CSV", type=["csv"], key="vendor_csv_uploader")
 
             st.caption(
@@ -304,34 +293,31 @@ with st.sidebar:
                         )
                         row = out.iloc[int(i)].to_dict()
 
-                        if st.button("Use selected vendor in chat", key="use_vendor_ctx"):
-                            st.session_state.selected_vendor_context = {
-                                "vendor_name": row.get("vendor_name"),
-                                "product_or_component": row.get("product_or_component"),
-                                "component_class": row.get("component_class"),
-                                "origin_jurisdiction": row.get("origin_jurisdiction"),
-                                "criticality": row.get("criticality"),
-                                "contains_ree_magnets": row.get("contains_ree_magnets"),
-                                "ree_risk": float(row.get("ree_risk", 0.0)),
-                                "firmware_risk": float(row.get("firmware_risk", 0.0)),
-                                "overall_risk": float(row.get("overall_risk", 0.0)),
-                                "tier": row.get("tier"),
-                                "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
-                            }
-                            st.success("Vendor context stored. Ask a vendor/control question in chat.")
-
-        ctx = st.session_state.get("selected_vendor_context")
-        if ctx:
-            st.divider()
-            st.markdown("#### Selected Vendor Context")
-            st.caption(f"{ctx.get('vendor_name')} | Tier: {ctx.get('tier')} | Overall: {ctx.get('overall_risk'):.2f}")
-            if st.button("Clear selected vendor", key="clear_vendor_ctx"):
-                st.session_state.selected_vendor_context = None
-                st.success("Cleared vendor context.")
+                        cols = st.columns([1, 1], gap="small")
+                        with cols[0]:
+                            if st.button("Use selected vendor in chat", key="use_vendor_ctx"):
+                                st.session_state.selected_vendor_context = {
+                                    "vendor_name": row.get("vendor_name"),
+                                    "product_or_component": row.get("product_or_component"),
+                                    "component_class": row.get("component_class"),
+                                    "origin_jurisdiction": row.get("origin_jurisdiction"),
+                                    "criticality": row.get("criticality"),
+                                    "contains_ree_magnets": row.get("contains_ree_magnets"),
+                                    "ree_risk": float(row.get("ree_risk", 0.0)),
+                                    "firmware_risk": float(row.get("firmware_risk", 0.0)),
+                                    "overall_risk": float(row.get("overall_risk", 0.0)),
+                                    "tier": row.get("tier"),
+                                    "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
+                                }
+                                st.success("Vendor context stored.")
+                        with cols[1]:
+                            if st.button("Clear vendor context", key="clear_vendor_ctx"):
+                                st.session_state.selected_vendor_context = None
+                                st.success("Cleared vendor context.")
 
 
 # =========================
-# Main UI (commercial / professional layout)
+# Main UI (minimal above-the-fold)
 # =========================
 st.markdown(
     """
@@ -347,16 +333,8 @@ st.markdown(
 
 st.write("")
 
-btns = st.columns([1.6, 2.4], gap="small")
-with btns[0]:
-    st.link_button("LinkedIn — Professional Profile", LINKEDIN_URL, use_container_width=True)
-with btns[1]:
-    st.caption("Public-safe mode • Evidence-only • Audit-forward")
-
-st.write("")
-
-colA, colB, colC = st.columns([1.2, 1.2, 1.6], gap="large")
-with colA:
+top = st.columns([1.25, 1.25, 1.5], gap="large")
+with top[0]:
     st.markdown(
         """
 <div class="dk-card">
@@ -364,45 +342,43 @@ with colA:
   Public-safe • Evidence-only • Audit-forward
   <hr style="border:0;border-top:1px solid rgba(148,163,184,0.18);margin:12px 0;">
   <span style="color:#A1A1AA">
-  Designed for recruiter/CISO evaluation: coherent answers, explicit evidence, no invented citations.
+  Built for recruiter/CISO evaluation: coherent answers + explicit evidence.
   </span>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
-with colB:
+with top[1]:
     st.markdown(
         """
 <div class="dk-card">
-  <b>Primary domains</b><br/>
+  <b>Domains</b><br/>
   Networks • Forensics • Supply Chain • Strategic Modeling
   <hr style="border:0;border-top:1px solid rgba(148,163,184,0.18);margin:12px 0;">
   <span style="color:#A1A1AA">
-  Ask “what/how/why” questions. Plans/timelines are generated only when requested.
+  Plans/timelines only when requested.
   </span>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
-with colC:
-    st.markdown(
-        """
-<div class="dk-card">
-  <b>How to use</b><br/>
-  1) Ask about NAMECOMMS / WarSim / portfolio / methods<br/>
-  2) Ask vendor questions only after loading CSV (optional)<br/>
-  3) Evidence is appended as corpus filenames
-</div>
-""",
-        unsafe_allow_html=True,
-    )
+with top[2]:
+    with st.expander("Quick help", expanded=False):
+        st.markdown(
+            "**Examples:**\n"
+            "- “Explain NAMECOMMS entropy detection in plain terms.”\n"
+            "- “Walk me through the WarSim architecture at a high level.”\n"
+            "- “How do you validate RAG outputs in restricted environments?”\n"
+            "- “Use the selected vendor: map score → mitigations.” (after CSV)\n"
+        )
 
 st.write("")
 
+
 # =========================
-# Recruiter-first pinned opener
+# Recruiter-first pinned opener (collapsed behind expander)
 # =========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -412,28 +388,38 @@ if "recruiter_opener_sent" not in st.session_state:
 
 if not st.session_state.messages and not st.session_state.recruiter_opener_sent:
     opener = (
-        "**Recruiter quick-start (pick one):**\n"
-        "1) What role are you hiring for (CISO, security architect, data engineer, ML engineer)?\n"
-        "2) What environment constraints exist (regulated, air-gapped, classified-adjacent, vendor-managed cloud)?\n"
-        "3) What is the biggest risk area today (firmware/supply chain, IR, identity, AI/ML misuse, network control plane)?\n"
-        "4) What deliverable would you want in 30 days (assessment, prototype, roadmap, hardening plan, executive brief)?"
+        "**Recruiter quick-start (answer any 1–2):**\n"
+        "1) Role scope you’re hiring for?\n"
+        "2) Environment constraints (regulated / air-gapped / restricted)?\n"
+        "3) Primary risk area (firmware, IR, identity, AI misuse, network control plane)?\n"
+        "4) Desired Day-30 deliverable (assessment, prototype, roadmap, hardening plan)?"
     )
     st.session_state.messages.append({"role": "assistant", "content": opener})
     st.session_state.recruiter_opener_sent = True
 
-for m in st.session_state.messages:
+with st.expander("Recruiter intake prompts", expanded=False):
+    st.markdown(st.session_state.messages[0]["content"] if st.session_state.messages else "")
+
+
+# =========================
+# Chat display
+# =========================
+# Show chat history EXCEPT the pinned opener (since it’s in the expander)
+start_idx = 1 if st.session_state.messages and st.session_state.messages[0]["role"] == "assistant" else 0
+for m in st.session_state.messages[start_idx:]:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
 user_input = st.chat_input("Ask about NAMECOMMS, WarSim, AI/ML systems, firmware risk, or this portfolio…")
 
 if user_input:
+    # store user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        # LLM init compatibility (api_key vs openai_api_key depending on package version)
+        # LLM init compatibility
         try:
             llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=st.secrets["OPENAI_API_KEY"])
         except TypeError:
@@ -457,7 +443,6 @@ if user_input:
                 + "\n"
             )
 
-        # Conversational by default; plans ONLY when asked.
         system_prompt = (
             "You are an evidence-only technical proxy representing Dr. Stephen Dietrich-Kolokouris.\n\n"
             "MANDATORY CONSTRAINTS:\n"
@@ -468,8 +453,7 @@ if user_input:
             "5) Do NOT output bibliography-style citations. Evidence is appended automatically.\n\n"
             "STYLE:\n"
             "- Default: coherent, recruiter-grade explanation.\n"
-            "- If the user explicitly asks for a 30/60/90 or a plan/timeline, then provide one.\n"
-            "- Otherwise, avoid rigid templates.\n\n"
+            "- Provide a plan/timeline ONLY if the user explicitly asks.\n\n"
             "Retrieved Context:\n{context}"
             + vendor_block
         )
@@ -490,20 +474,14 @@ if user_input:
             input_key="query",
         )
 
-        # If vendor context is present, lightly prime the question without forcing a format
+        question_payload = user_input
         if vendor_ctx:
-            question_payload = (
-                f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} "
-                f"Overall={vendor_ctx.get('overall_risk')}] {user_input}"
-            )
-        else:
-            question_payload = user_input
+            question_payload = f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} Overall={vendor_ctx.get('overall_risk')}] {user_input}"
 
         result = qa.invoke({"query": question_payload})
-        answer = result.get("result", "") or ""
+        answer = (result.get("result", "") or "").strip()
         answer = enforce_no_external_refs(answer)
 
-        # Evidence: filenames only
         sources = sorted(
             {
                 os.path.basename(d.metadata.get("source", ""))
