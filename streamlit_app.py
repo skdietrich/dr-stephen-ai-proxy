@@ -51,7 +51,7 @@ def enforce_no_external_refs(text: str) -> str:
 # Streamlit config + “defense contractor” skin (CSS)
 # =========================
 st.set_page_config(
-    page_title="Dr. Stephen Dietrich-Kolokouris, PhD | Strategic Proxy",
+    page_title="Dr. Stephen Dietrich-Kolokouris, PhD ",
     page_icon="🛡️",
     layout="wide",
 )
@@ -319,10 +319,11 @@ with st.sidebar:
 # =========================
 # Main UI (minimal above-the-fold)
 # =========================
+
 st.markdown(
     """
 <div class="dk-hero">
-  <div class="dk-title">Strategic Proxy — Evidence-Only Technical Briefing</div>
+  <div class="dk-title">Technical Skillset Briefing</div>
   <div class="dk-subtitle">
     Cybersecurity • AI/ML Decision Support • Data Engineering • Strategic Systems Analysis
   </div>
@@ -494,3 +495,4 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
