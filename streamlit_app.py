@@ -7,7 +7,7 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains import RetrievalQA
 
 # Deterministic calculator modules (must exist in repo root)
@@ -85,7 +85,7 @@ def enforce_no_external_refs(text: str) -> str:
 # Streamlit configuration
 # =========================
 
-st.set_page_config(page_title="🛡️ Dr. Stephen Dietrich-Kolokouris — Technical & Strategic Systems", layout="wide")
+st.set_page_config(page_title="Dr. Stephen Dietrich-Kolokouris, PhD", layout="wide")
 
 
 # =========================
@@ -109,7 +109,7 @@ def init_knowledge_base():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(documents)
 
-    embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
+    embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
 
     with st.status("🔗 Operationalizing Cross-Domain Intelligence...", expanded=False) as status:
         vectorstore = FAISS.from_documents(texts, embeddings)
@@ -127,29 +127,54 @@ retriever = init_knowledge_base()
 # =========================
 
 with st.sidebar:
-    st.header("🛡️ Dr. Stephen Dietrich-Kolokouris")
-    st.markdown("**PhD | CCIE #2482 | Data Engineer**")
+    st.header("Dr. Stephen Dietrich-Kolokouris")
+    st.caption("Applied Security • Systems Analysis • Data Engineering")
+
+    # Subtle public-safe / evidence-only notice (CISO / Gov norms)
+    st.info(
+        "Public-safe mode: responses are generated only from the loaded corpus. "
+        "If evidence is not present, the system will respond 'Not in corpus.' "
+        "No classified, customer-specific, or operational details are disclosed.",
+        icon="🔒"
+    )
 
     st.divider()
-    st.header("🏢 System Entropy Simulator")
-    domain = st.selectbox("Select Domain", ["Network (BGP/VXLAN)", "Forensics (MDFTs)", "Strategic (WarSim)", "History/C2"])
-    chaos = st.slider("Information Entropy Level (H)", 0.0, 8.0, 2.4)
 
-    if st.button("Analyze Resilience"):
+    # Rename to CISO/Gov contracting phrasing
+    st.subheader("Operational Readiness Controls")
+    st.markdown(
+        "- **Evidence-based retrieval** (RAG)\n"
+        "- **Deterministic scoring** (risk tier → mitigations)\n"
+        "- **Audit-forward outputs** (source traceability)\n"
+        "- **Restricted-environment discipline** (public-safe disclosure)"
+    )
+
+    st.divider()
+
+    st.subheader("Resilience & Degradation Simulator")
+    domain = st.selectbox(
+        "System Domain",
+        ["Network (BGP/VXLAN)", "Forensics (MDFTs)", "Strategic (WarSim)", "History/C2"],
+        key="domain_select"
+    )
+    chaos = st.slider("Entropy / Disorder Index (H)", 0.0, 8.0, 2.4, key="entropy_slider")
+
+    if st.button("Run Resilience Check", key="resilience_button"):
         if chaos > 6.0:
-            st.error(f"CRITICAL FAILURE: {domain} Stability Compromised")
-            st.write("Root Cause: High entropy prevents deterministic recovery.")
+            st.error(f"High-risk degradation: {domain}")
+            st.write("Interpretation: elevated entropy reduces deterministic recovery and increases operational uncertainty.")
         else:
-            st.success(f"System Operational: {domain} H={chaos}")
+            st.success(f"Operationally stable: {domain} | H={chaos:.1f}")
 
     st.divider()
-    st.caption("WarSim v5.6 | Silent Weapons | CCIE #2482")
+    st.caption("Evidence-only • Public-safe • Audit-forward")
 
     # ---- Supply Chain Risk Calculator ----
     st.divider()
-    st.header("🧮 Supply Chain Risk Calculator")
+    st.subheader("Supply Chain Risk Assessment")
+    st.caption("Deterministic scoring → mitigation playbook (audit-forward)")
 
-    weight_fw = st.slider("Weight: Firmware Integrity", 0.0, 1.0, 0.55, 0.05)
+    weight_fw = st.slider("Weight: Firmware Integrity", 0.0, 1.0, 0.55, 0.05, key="weight_fw_slider")
     st.caption(f"Weight: REE Concentration = {1.0 - weight_fw:.2f}")
 
     with st.expander("Upload vendor CSV → score → send to Proxy", expanded=False):
@@ -256,8 +281,9 @@ with st.sidebar:
 # Main chat UI
 # =========================
 
-st.title("🛡️ Dr. Stephen Dietrich-Kolokouris — Technical & Strategic Systems")
-st.markdown("#### Cybersecurity • Data Engineering • AI/ML Systems • Strategic Modeling")
+st.title("🛡️ Dr. Stephen Dietrich-Kolokouris — Applied Security & Systems Analysis")
+st.markdown("#### Cybersecurity • Data Engineering • AI/ML Decision Support • Strategic Modeling")
+st.caption("Scope boundary: public-safe responses from the loaded corpus only. No external citations are generated.")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -277,7 +303,7 @@ if user_input:
         llm = ChatOpenAI(
             model="gpt-4o",
             temperature=0,
-            api_key=st.secrets["OPENAI_API_KEY"]
+            openai_api_key=st.secrets["OPENAI_API_KEY"]
         )
 
         vendor_ctx = st.session_state.get("selected_vendor_context")
@@ -299,7 +325,6 @@ if user_input:
             )
 
         # Hard-locked system prompt: only retrieved PDF content + deterministic vendor context.
-        # IMPORTANT: We do NOT ban years/standards here; we ban bibliography-style references.
         system_prompt = (
             "SYSTEM CONSTRAINTS (MANDATORY):\n"
             "1) Use ONLY the retrieved PDF excerpts provided in {context}.\n"
@@ -309,7 +334,6 @@ if user_input:
             "4) If vendor context is present, you MUST use its Tier & Scores and MUST NOT claim you need them.\n"
             "5) If asked for evidence not present in {context}, write: 'Not in corpus.'\n"
             "6) Do NOT output a 'Citations:' line; citations are appended programmatically.\n\n"
-
             "OUTPUT FORMAT (STRICT):\n"
             "A) Vendor Tier & Scores (if vendor context exists)\n"
             "B) Do-First (0–30 days): max 3 bullets\n"
@@ -317,11 +341,9 @@ if user_input:
             "D) Do-Later (61–90 days): max 3 bullets\n"
             "E) Evidence Notes: 2–4 bullets. Each bullet MUST include a short quoted phrase (≤10 words) copied from {context}. "
             "If you cannot quote support, label that bullet 'Not in corpus.'\n\n"
-
             "STYLE:\n"
             "- Operational actions + deliverables; avoid generic advice.\n"
             "- When relevant, reflect: network/control plane, forensics/IR, strategic C2/entropy, corporate impact.\n\n"
-
             "Retrieved PDF Context: {context}"
             + vendor_block
         )
@@ -369,4 +391,3 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-
