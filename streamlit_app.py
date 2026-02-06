@@ -48,7 +48,7 @@ def enforce_no_external_refs(text: str) -> str:
 
 
 # =========================
-# Streamlit config + "Commercial / Gov-Contractor" UI skin (CSS)
+# Streamlit config + "Lockheed-esque" UI skin (CSS)
 # =========================
 st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris, PhD | Strategic Proxy",
@@ -59,6 +59,7 @@ st.set_page_config(
 st.markdown(
     """
 <style>
+/* ---------- Global ---------- */
 :root{
   --bg0:#070A12;
   --bg1:#0B1020;
@@ -75,52 +76,53 @@ html, body, [class*="stApp"]{
   color: var(--txt) !important;
 }
 
-.main .block-container { padding-top: 1.0rem; padding-bottom: 2.2rem; }
+/* Reduce Streamlit top padding */
+.main .block-container { padding-top: 1.2rem; }
 
+/* ---------- Sidebar ---------- */
 section[data-testid="stSidebar"]{
   background: linear-gradient(180deg, rgba(11,16,32,0.92) 0%, rgba(5,6,10,0.92) 100%) !important;
   border-right: 1px solid var(--line);
 }
+section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] label{
+  color: var(--txt) !important;
+}
 
+/* ---------- Cards ---------- */
+.dk-card{
+  background: linear-gradient(180deg, rgba(15,23,42,0.90) 0%, rgba(2,6,23,0.70) 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.dk-hero{
+  background: linear-gradient(135deg, rgba(96,165,250,0.14) 0%, rgba(34,197,94,0.08) 55%, rgba(15,23,42,0.65) 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 34px rgba(0,0,0,0.42);
+}
+
+.dk-title{
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+.dk-subtitle{
+  color: var(--muted);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* Chat bubbles slightly tighter */
 [data-testid="stChatMessage"]{
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(15,23,42,0.55);
 }
-
-.dk-card{
-  background: linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(2,6,23,0.72) 100%);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px 18px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.42);
-}
-
-.dk-hero{
-  background: linear-gradient(135deg, rgba(96,165,250,0.14) 0%, rgba(15,23,42,0.65) 70%, rgba(2,6,23,0.70) 100%);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px 20px;
-  box-shadow: 0 14px 38px rgba(0,0,0,0.46);
-}
-
-.dk-title{
-  font-size: 1.55rem;
-  font-weight: 750;
-  letter-spacing: 0.2px;
-  margin: 0;
-}
-
-.dk-subtitle{
-  color: var(--muted);
-  margin-top: 6px;
-  margin-bottom: 0;
-}
-
-/* Cleaner product feel */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
 </style>
 """,
     unsafe_allow_html=True,
@@ -128,34 +130,34 @@ header {visibility: hidden;}
 
 
 # =========================
-# Assets (logo + headshot) + links
+# Branding: LinkedIn + assets
 # =========================
-def _first_existing(paths):
-    for p in paths:
+LINKEDIN_URL = "https://www.linkedin.com/in/stephendietrich-kolokouris/"
+
+def find_logo_path() -> str | None:
+    """
+    Put your logo in ONE of these paths:
+      - ./assets/logo.png
+      - ./assets/logo.jpg
+      - ./assets/logo.jpeg
+      - ./logo.png
+      - ./logo.jpg
+      - ./logo.jpeg
+    """
+    candidates = [
+        os.path.join("assets", "logo.png"),
+        os.path.join("assets", "logo.jpg"),
+        os.path.join("assets", "logo.jpeg"),
+        "logo.png",
+        "logo.jpg",
+        "logo.jpeg",
+    ]
+    for p in candidates:
         if os.path.exists(p):
             return p
     return None
 
-HEADSHOT_PATH = _first_existing([
-    os.path.join("assets", "headshot.png"),
-    os.path.join("assets", "headshot.jpg"),
-    os.path.join("assets", "headshot.jpeg"),
-    "headshot.png",
-    "headshot.jpg",
-    "headshot.jpeg",
-])
-
-LOGO_PATH = _first_existing([
-    os.path.join("assets", "logo.png"),
-    os.path.join("assets", "logo.jpg"),
-    os.path.join("assets", "logo.jpeg"),
-    "logo.png",
-    "logo.jpg",
-    "logo.jpeg",
-])
-
-LINKEDIN_URL = st.secrets.get("https://www.linkedin.com/in/stephendietrich-kolokouris", "").strip()
-GITHUB_URL = st.secrets.get("GITHUB_URL", "https://github.com/skdietrich/dr-stephen-ai-proxy").strip()
+LOGO_PATH = find_logo_path()
 
 
 # =========================
@@ -177,7 +179,7 @@ def init_knowledge_base():
     splitter = RecursiveCharacterTextSplitter(chunk_size=1100, chunk_overlap=160)
     chunks = splitter.split_documents(docs)
 
-    # Embeddings init compatibility (api_key vs openai_api_key)
+    # Embeddings init compatibility (api_key vs openai_api_key depending on package version)
     try:
         embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
     except TypeError:
@@ -194,7 +196,7 @@ retriever = init_knowledge_base()
 
 
 # =========================
-# Sidebar (branding + controls)
+# Sidebar
 # =========================
 with st.sidebar:
     if LOGO_PATH:
@@ -203,17 +205,7 @@ with st.sidebar:
     st.markdown("### Dr. Stephen Dietrich-Kolokouris")
     st.caption("Applied Security • Systems Analysis • Data Engineering • Strategic Modeling")
 
-    if HEADSHOT_PATH:
-        st.image(HEADSHOT_PATH, use_container_width=True)
-
-    cols = st.columns([1, 1])
-    with cols[0]:
-        if LINKEDIN_URL:
-            st.link_button("LinkedIn", LINKEDIN_URL, use_container_width=True)
-        else:
-            st.button("LinkedIn", disabled=True, use_container_width=True)
-    with cols[1]:
-        st.link_button("GitHub", GITHUB_URL, use_container_width=True)
+    st.link_button("LinkedIn Profile", LINKEDIN_URL, use_container_width=True)
 
     st.info(
         "🔒 **Public-Safe / Evidence-Only**\n\n"
@@ -332,32 +324,17 @@ with st.sidebar:
         if ctx:
             st.divider()
             st.markdown("#### Selected Vendor Context")
-            try:
-                overall_val = float(ctx.get("overall_risk", 0.0))
-            except Exception:
-                overall_val = 0.0
-            st.caption(f"{ctx.get('vendor_name')} | Tier: {ctx.get('tier')} | Overall: {overall_val:.2f}")
+            st.caption(f"{ctx.get('vendor_name')} | Tier: {ctx.get('tier')} | Overall: {ctx.get('overall_risk'):.2f}")
             if st.button("Clear selected vendor", key="clear_vendor_ctx"):
                 st.session_state.selected_vendor_context = None
                 st.success("Cleared vendor context.")
 
 
 # =========================
-# Main UI (commercial layout)
+# Main UI (commercial / professional layout)
 # =========================
-left, right = st.columns([1.15, 2.85], gap="large")
-
-with left:
-    st.markdown('<div class="dk-card">', unsafe_allow_html=True)
-    if HEADSHOT_PATH:
-        st.image(HEADSHOT_PATH, use_container_width=True)
-    else:
-        st.caption("Add `assets/headshot.png` for a headshot panel.")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with right:
-    st.markdown(
-        """
+st.markdown(
+    """
 <div class="dk-hero">
   <div class="dk-title">Strategic Proxy — Evidence-Only Technical Briefing</div>
   <div class="dk-subtitle">
@@ -365,21 +342,16 @@ with right:
   </div>
 </div>
 """,
-        unsafe_allow_html=True,
-    )
+    unsafe_allow_html=True,
+)
 
-    st.write("")
-    btns = st.columns([1, 1, 2.2], gap="small")
-    with btns[0]:
-        if LINKEDIN_URL:
-            st.link_button("LinkedIn", LINKEDIN_URL, use_container_width=True)
-        else:
-            st.button("LinkedIn", disabled=True, use_container_width=True)
-            st.caption("Set LINKEDIN_URL in Streamlit secrets.")
-    with btns[1]:
-        st.link_button("GitHub Repo", GITHUB_URL, use_container_width=True)
-    with btns[2]:
-        st.caption("Public-safe mode • Evidence-only • No external citations • Audit-forward")
+st.write("")
+
+btns = st.columns([1.6, 2.4], gap="small")
+with btns[0]:
+    st.link_button("LinkedIn — Professional Profile", LINKEDIN_URL, use_container_width=True)
+with btns[1]:
+    st.caption("Public-safe mode • Evidence-only • Audit-forward")
 
 st.write("")
 
@@ -407,7 +379,7 @@ with colB:
   Networks • Forensics • Supply Chain • Strategic Modeling
   <hr style="border:0;border-top:1px solid rgba(148,163,184,0.18);margin:12px 0;">
   <span style="color:#A1A1AA">
-  Ask “what/how/why” questions; plans/timelines are generated only when requested.
+  Ask “what/how/why” questions. Plans/timelines are generated only when requested.
   </span>
 </div>
 """,
@@ -419,8 +391,8 @@ with colC:
         """
 <div class="dk-card">
   <b>How to use</b><br/>
-  1) Start with recruiter questions (role, constraints, priorities)<br/>
-  2) Ask about NAMECOMMS / WarSim / portfolio / methods<br/>
+  1) Ask about NAMECOMMS / WarSim / portfolio / methods<br/>
+  2) Ask vendor questions only after loading CSV (optional)<br/>
   3) Evidence is appended as corpus filenames
 </div>
 """,
@@ -429,29 +401,25 @@ with colC:
 
 st.write("")
 
-
 # =========================
-# Chat state + recruiter pinned opener
+# Recruiter-first pinned opener
 # =========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "recruiter_intro_done" not in st.session_state:
-    st.session_state.recruiter_intro_done = False
+if "recruiter_opener_sent" not in st.session_state:
+    st.session_state.recruiter_opener_sent = False
 
-if not st.session_state.messages and not st.session_state.recruiter_intro_done:
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": (
-                "**To tailor this briefing:**\n"
-                "1) What role are you hiring for (CISO, Security Architect, DFIR, Data Eng, AI/ML)?\n"
-                "2) What environment constraints apply (regulated / restricted / air-gapped)?\n"
-                "3) What’s the highest-risk domain: supply chain/firmware, incident response, AI misuse, or infrastructure resilience?"
-            ),
-        }
+if not st.session_state.messages and not st.session_state.recruiter_opener_sent:
+    opener = (
+        "**Recruiter quick-start (pick one):**\n"
+        "1) What role are you hiring for (CISO, security architect, data engineer, ML engineer)?\n"
+        "2) What environment constraints exist (regulated, air-gapped, classified-adjacent, vendor-managed cloud)?\n"
+        "3) What is the biggest risk area today (firmware/supply chain, IR, identity, AI/ML misuse, network control plane)?\n"
+        "4) What deliverable would you want in 30 days (assessment, prototype, roadmap, hardening plan, executive brief)?"
     )
-    st.session_state.recruiter_intro_done = True
+    st.session_state.messages.append({"role": "assistant", "content": opener})
+    st.session_state.recruiter_opener_sent = True
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
@@ -465,7 +433,7 @@ if user_input:
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        # LLM init compatibility (api_key vs openai_api_key)
+        # LLM init compatibility (api_key vs openai_api_key depending on package version)
         try:
             llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=st.secrets["OPENAI_API_KEY"])
         except TypeError:
@@ -485,17 +453,18 @@ if user_input:
                 f"- Tier: {vendor_ctx.get('tier')}\n"
                 f"- Scores: REE={vendor_ctx.get('ree_risk')}, FW={vendor_ctx.get('firmware_risk')}, Overall={vendor_ctx.get('overall_risk')}\n"
                 "Mitigation priorities (deterministic):\n"
-                + "\n".join([f"- {mm}" for mm in vendor_ctx.get("mitigations", [])])
+                + "\n".join([f"- {m}" for m in vendor_ctx.get("mitigations", [])])
                 + "\n"
             )
 
+        # Conversational by default; plans ONLY when asked.
         system_prompt = (
             "You are an evidence-only technical proxy representing Dr. Stephen Dietrich-Kolokouris.\n\n"
             "MANDATORY CONSTRAINTS:\n"
             "1) Use ONLY the retrieved corpus excerpts in {context}.\n"
             "2) If selected vendor context is present, you may use it as deterministic input.\n"
             "3) Do NOT invent facts, credentials, project details, or external citations.\n"
-            "4) If part of a question is unsupported, say 'Not in corpus.' briefly and continue.\n"
+            "4) If asked for something not supported by {context}, say 'Not in corpus.' briefly and continue.\n"
             "5) Do NOT output bibliography-style citations. Evidence is appended automatically.\n\n"
             "STYLE:\n"
             "- Default: coherent, recruiter-grade explanation.\n"
@@ -521,14 +490,20 @@ if user_input:
             input_key="query",
         )
 
-        question_payload = user_input
+        # If vendor context is present, lightly prime the question without forcing a format
         if vendor_ctx:
-            question_payload = f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} Overall={vendor_ctx.get('overall_risk')}] {user_input}"
+            question_payload = (
+                f"[Vendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} "
+                f"Overall={vendor_ctx.get('overall_risk')}] {user_input}"
+            )
+        else:
+            question_payload = user_input
 
         result = qa.invoke({"query": question_payload})
-        answer = (result.get("result", "") or "").strip()
+        answer = result.get("result", "") or ""
         answer = enforce_no_external_refs(answer)
 
+        # Evidence: filenames only
         sources = sorted(
             {
                 os.path.basename(d.metadata.get("source", ""))
@@ -541,4 +516,3 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-
