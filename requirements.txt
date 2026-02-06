@@ -1,9 +1,8 @@
 streamlit
-langchain>=1.0.0
-langchain-openai
+langchain
 langchain-community
-langchain-text-splitters
-langchain-classic  # The "safety net" for legacy chain imports
-pypdf
+langchain-openai
 faiss-cpu
+pypdf
+openai
 tiktoken
