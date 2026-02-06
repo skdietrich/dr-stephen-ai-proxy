@@ -1,11 +1,11 @@
 import streamlit as st
 import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-# The new, stable imports for LangChain 0.3+
-from langchain.chains import create_retrieval_chain
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.vectorstores import FAISS
+# Corrected import path for LangChain 1.x
+from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -96,3 +96,4 @@ if prompt := st.chat_input("Ask about Dr. Stephen's research..."):
             st.caption(f"Sources: {', '.join(sources)}")
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
+
