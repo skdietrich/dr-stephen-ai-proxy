@@ -1,88 +1,66 @@
 import streamlit as st
 import os
-import time
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.prompts import ChatPromptTemplate
+from langchain.chains import RetrievalQA
 
 # --- 1. CORE CONFIGURATION ---
-st.set_page_config(page_title="Dr. Stephen | Strategic & Network Proxy", layout="wide")
+st.set_page_config(page_title="Dr. Stephen | skdietrich Proxy", layout="wide")
 
-# --- 2. THE KNOWLEDGE BASE (CCIE & WARFARE RAG) ---
+# --- 2. INDEXING ENGINE (Optimized & Deterministic) ---
 @st.cache_resource
 def init_knowledge_base():
     if not os.path.exists("data"):
-        st.error("Missing 'data' folder. Place your PDFs there.")
+        st.error("Infrastructure Error: 'data' folder not found.")
         st.stop()
     
     loader = PyPDFDirectoryLoader("data/")
     documents = loader.load()
     
     if not documents:
-        st.error("No PDFs found in 'data' folder.")
+        st.error("No intelligence assets found. Please upload PDFs to the /data directory.")
         st.stop()
     
-    # Granular splitting for technical accuracy
+    # Split for CCIE technical precision and PhD research depth
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(documents)
     
-    embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
+    embeddings = OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
     
-    vectorstore = None
-    batch_size = 20 
-    
-    with st.status("🔗 Operationalizing Intelligence Engine...", expanded=True) as status:
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            if vectorstore is None:
-                vectorstore = FAISS.from_documents(batch, embeddings)
-            else:
-                vectorstore.add_documents(batch)
-            st.write(f"Synced {min(i + batch_size, len(texts))} / {len(texts)} segments...")
-            time.sleep(1.5)  # Prevents RateLimitError
-            
-        status.update(label="✅ Systems Synced: Proxy Online", state="complete", expanded=False)
+    # Building the Vector Plane
+    with st.status("🔗 Syncing CCIE Protocols & WarSim Strategic Data...", expanded=False) as status:
+        vectorstore = FAISS.from_documents(texts, embeddings)
+        status.update(label="✅ Systems Synced: Proxy Online", state="complete")
         
     return vectorstore.as_retriever(search_kwargs={"k": 4})
 
 # Initialize Proxy
-try:
-    retriever = init_knowledge_base()
-except Exception as e:
-    st.error(f"System Offline: {e}")
-    st.stop()
+retriever = init_knowledge_base()
 
-# --- 3. SIDEBAR: CORPORATE & LOGISTICS CORRELATION ---
+# --- 3. SIDEBAR: ENTROPY & INFRASTRUCTURE ---
 with st.sidebar:
     st.header("🛡️ Strategic Proxy")
     st.markdown("**Dr. Stephen Dietrich-Kolokouris**\n*PhD | CCIE R&S | Military Systems Analyst*")
     
     st.divider()
     
-    st.header("🏢 Infrastructure Stress Test")
-    sector = st.selectbox("Critical Sector", ["Global Logistics", "Energy Grid", "Financial Hub"])
-    attack = st.radio("Threat Vector", ["BGP Hijacking (L3)", "STP Root Attack (L2)", "MPLS Path Failure"])
+    st.header("🏢 Network Entropy Simulator")
+    metric = st.selectbox("Target Plane", ["BGP Control Plane", "Energy Grid SCADA", "Logistics ERP"])
+    chaos = st.slider("Information Entropy (H)", 0.0, 8.0, 2.4)
     
-    if st.button("Simulate Cascade"):
-        if attack == "BGP Hijacking (L3)":
-            st.error("CRITICAL: LOGISTICS SEIZURE")
-            st.write("**Technical Impact:** AIS data rerouted via malicious AS.")
-            st.write("**Corporate Result:** Total inventory blackout. $2.1M/hr loss.")
-        elif attack == "STP Root Attack (L2)":
-            st.warning("DEGRADED OPERATIONS")
-            st.write("**Technical Impact:** Spanning tree topology manipulation.")
-            st.write("**Corporate Result:** Network loops causing broadcast storms.")
+    if st.button("Calculate Degradation"):
+        if chaos > 5.5:
+            st.error("CASCADE COLLAPSE: Entropy exceeds system capacity.")
+            st.write("**Technical Impact:** NameComms re-sync required. Deterministic routing lost.")
         else:
-            st.warning("DEGRADED OPERATIONS")
-            st.write("**Technical Impact:** SCADA/DCS heartbeat latency increased.")
-            st.write("**Corporate Result:** Process control instability.")
+            st.success(f"System Stable: H={chaos}")
 
-# --- 4. CHAT INTERFACE ---
-st.title("🛡️ Dr. Stephen Proxy: Cyber-Kinetic Engine")
+# --- 4. CHAT INTERFACE (RetrievalQA Logic) ---
+st.title("🛡️ Dr. Stephen Proxy: skdietrich.app")
+st.markdown("#### Applying Information Entropy to IT Infrastructure & Global Logistics")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -91,49 +69,54 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask about BGP convergence, WarSim v5.6, or infrastructure risk..."):
+if prompt := st.chat_input("Ask about BGP, NameComms, or WarSim v5.6..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        try:
-            llm = ChatOpenAI(
-                model="gpt-4o", 
-                temperature=0, 
-                openai_api_key=st.secrets["OPENAI_API_KEY"]
-            )
-            
-            system_prompt = (
-                "You are Dr. Stephen's AI Proxy, a CCIE-certified Network Architect and Military Systems Analyst. "
-                "Hierarchy of response:\n"
-                "1. STRATEGIC OVERVIEW (Risk to global systems)\n"
-                "2. CORPORATE CORRELATION (Logistics/Purdue Model impact)\n"
-                "3. GRANULAR TECHNICAL (CCIE-level protocol details)\n"
-                "4. DATA REFERENCE (WarSim v5.6 or Silent Weapons results)\n"
-                "\nContext: {context}"
-            )
-            
-            prompt_tmpl = ChatPromptTemplate.from_messages([
-                ("system", system_prompt),
-                ("human", "{input}"),
-            ])
+        llm = ChatOpenAI(
+            model="gpt-4o", 
+            temperature=0, 
+            api_key=st.secrets["OPENAI_API_KEY"]
+        )
+        
+        system_prompt = (
+            "You are Dr. Stephen's AI Proxy (CCIE Certified). Use this hierarchy:\n"
+            "1. OVERVIEW: How entropy (disorder) is impacting the system.\n"
+            "2. IT APPLICATION: How NameComms apps or secure seeds restore order.\n"
+            "3. CCIE DETAIL: Specific granular protocol hardening (BGP, MPLS, STP).\n"
+            "4. CORPORATE: Impact on logistics/energy (Purdue Model).\n"
+            "\nContext: {context}"
+        )
+        
+        prompt_tmpl = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "{query}"), # RetrievalQA standard
+        ])
 
-            combine_docs_chain = create_stuff_documents_chain(llm, prompt_tmpl)
-            rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
-            
-            response = rag_chain.invoke({"input": prompt})
-            answer = response["answer"]
-            
-            st.markdown(answer)
-            
-            sources = sorted(set([os.path.basename(doc.metadata['source']) for doc in response["context"]]))
-            if sources:
-                st.caption(f"📚 Technical Context: {', '.join(sources)}")
-                
-        except Exception as e:
-            st.error(f"Query processing error: {e}")
-            answer = "System temporarily unavailable. Please try again."
-            st.markdown(answer)
+        # STABLE RETRIEVAL QA CHAIN
+        qa = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=retriever,
+            return_source_documents=True,
+            chain_type_kwargs={"prompt": prompt_tmpl},
+        )
+        
+        res = qa.invoke({"query": prompt})
+        answer = res["result"]
+        st.markdown(answer)
+
+        # Robust Source Extraction
+        sources = []
+        for doc in res.get("source_documents", []):
+            src = doc.metadata.get("source") or ""
+            if src:
+                sources.append(os.path.basename(src))
+        
+        sources = sorted(set(sources))
+        if sources:
+            st.caption(f"Technical Context: {', '.join(sources)}")
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
