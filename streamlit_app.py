@@ -281,7 +281,7 @@ with st.sidebar:
 # Main chat UI
 # =========================
 
-st.title("🛡️ Dr. Stephen Dietrich-Kolokouris — Applied Security & Systems Analysis")
+st.title("Stephen Dietrich-Kolokouris, PhD.")
 st.markdown("#### Cybersecurity • Data Engineering • AI/ML Decision Support • Strategic Modeling")
 st.caption("Scope boundary: public-safe responses from the loaded corpus only. No external citations are generated.")
 
@@ -391,3 +391,4 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
