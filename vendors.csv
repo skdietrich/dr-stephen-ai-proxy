@@ -1,0 +1,4 @@
+vendor_name,product_or_component,component_class,origin_jurisdiction,criticality,contains_ree_magnets,firmware_ota,firmware_signing,secure_boot_attestation,sbom_available,remote_admin_access,telemetry_logging,alt_supplier_available,known_single_point_of_failure
+Example Supplier A,Speaker module,Device magnet/haptics,Allied/NATO,High,yes,yes,unknown,unknown,unknown,no,unknown,unknown,unknown
+Example Supplier B,Haptic actuator,Device magnet/haptics,Strategic Competitor,Mission Critical,yes,yes,no,unknown,no,unknown,unknown,no,yes
+Example Supplier C,Assembly w/o magnets,Other assembly,US,Medium,no,no,yes,yes,yes,no,yes,yes,no,no
