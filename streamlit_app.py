@@ -6,21 +6,8 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-# --- TRIPLE-REDUNDANT IMPORT BLOCK ---
-try:
-    # Attempt 1: Modern 2026 Modular Path
-    from langchain.chains.retrieval import create_retrieval_chain
-    from langchain.chains.combine_documents import create_stuff_documents_chain
-except ImportError:
-    try:
-        # Attempt 2: LangChain-Classic (Standard for v1.0+)
-        from langchain_classic.chains.retrieval import create_retrieval_chain
-        from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-    except ImportError:
-        # Attempt 3: Legacy Monolithic Path
-        from langchain.chains import create_retrieval_chain
-        from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 
 # --- 1. CORE CONFIGURATION ---
 st.set_page_config(page_title="Dr. Stephen | Strategic & Network Proxy", layout="wide")
@@ -34,6 +21,10 @@ def init_knowledge_base():
     
     loader = PyPDFDirectoryLoader("data/")
     documents = loader.load()
+    
+    if not documents:
+        st.error("No PDFs found in 'data' folder.")
+        st.stop()
     
     # Granular splitting for technical accuracy
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
@@ -52,7 +43,7 @@ def init_knowledge_base():
             else:
                 vectorstore.add_documents(batch)
             st.write(f"Synced {min(i + batch_size, len(texts))} / {len(texts)} segments...")
-            time.sleep(1.5) # Prevents RateLimitError
+            time.sleep(1.5)  # Prevents RateLimitError
             
         status.update(label="✅ Systems Synced: Proxy Online", state="complete", expanded=False)
         
@@ -81,9 +72,14 @@ with st.sidebar:
             st.error("CRITICAL: LOGISTICS SEIZURE")
             st.write("**Technical Impact:** AIS data rerouted via malicious AS.")
             st.write("**Corporate Result:** Total inventory blackout. $2.1M/hr loss.")
+        elif attack == "STP Root Attack (L2)":
+            st.warning("DEGRADED OPERATIONS")
+            st.write("**Technical Impact:** Spanning tree topology manipulation.")
+            st.write("**Corporate Result:** Network loops causing broadcast storms.")
         else:
             st.warning("DEGRADED OPERATIONS")
             st.write("**Technical Impact:** SCADA/DCS heartbeat latency increased.")
+            st.write("**Corporate Result:** Process control instability.")
 
 # --- 4. CHAT INTERFACE ---
 st.title("🛡️ Dr. Stephen Proxy: Cyber-Kinetic Engine")
@@ -101,11 +97,15 @@ if prompt := st.chat_input("Ask about BGP convergence, WarSim v5.6, or infrastru
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=st.secrets["OPENAI_API_KEY"])
+        llm = ChatOpenAI(
+            model="gpt-4o", 
+            temperature=0, 
+            openai_api_key=st.secrets["OPENAI_API_KEY"]
+        )
         
         system_prompt = (
             "You are Dr. Stephen's AI Proxy, a CCIE-certified Network Architect and Military Systems Analyst. "
-            "Hierarchy of response: \n"
+            "Hierarchy of response:\n"
             "1. STRATEGIC OVERVIEW (Risk to global systems)\n"
             "2. CORPORATE CORRELATION (Logistics/Purdue Model impact)\n"
             "3. GRANULAR TECHNICAL (CCIE-level protocol details)\n"
@@ -128,6 +128,6 @@ if prompt := st.chat_input("Ask about BGP convergence, WarSim v5.6, or infrastru
         
         sources = sorted(set([os.path.basename(doc.metadata['source']) for doc in response["context"]]))
         if sources:
-            st.caption(f"Technical Context: {', '.join(sources)}")
+            st.caption(f"📚 Technical Context: {', '.join(sources)}")
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
