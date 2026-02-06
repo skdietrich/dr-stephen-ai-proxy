@@ -154,7 +154,7 @@ LOGO_PATH = _first_existing([
     "logo.jpeg",
 ])
 
-LINKEDIN_URL = st.secrets.get("LINKEDIN_URL", "").strip()
+LINKEDIN_URL = st.secrets.get("https://www.linkedin.com/in/stephendietrich-kolokouris", "").strip()
 GITHUB_URL = st.secrets.get("GITHUB_URL", "https://github.com/skdietrich/dr-stephen-ai-proxy").strip()
 
 
@@ -541,3 +541,4 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
