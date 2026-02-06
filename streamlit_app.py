@@ -85,7 +85,7 @@ def enforce_no_external_refs(text: str) -> str:
 # Streamlit configuration
 # =========================
 
-st.set_page_config(page_title="Dr. Stephen | skdietrich Proxy", layout="wide")
+st.set_page_config(page_title="🛡️ Dr. Stephen Dietrich-Kolokouris — Technical & Strategic Systems", layout="wide")
 
 
 # =========================
@@ -256,8 +256,8 @@ with st.sidebar:
 # Main chat UI
 # =========================
 
-st.title("🛡️ Dr. Stephen Proxy: Integrated Intelligence")
-st.markdown("#### Expertise: Networking, Forensics, Data Engineering, & Strategic History")
+st.title("🛡️ Dr. Stephen Dietrich-Kolokouris — Technical & Strategic Systems")
+st.markdown("#### Cybersecurity • Data Engineering • AI/ML Systems • Strategic Modeling")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -369,3 +369,4 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
