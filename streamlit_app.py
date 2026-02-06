@@ -109,6 +109,7 @@ def init_knowledge_base():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(documents)
 
+    # Use the OpenAI key from Streamlit secrets
     embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
 
     with st.status("🔗 Operationalizing Cross-Domain Intelligence...", expanded=False) as status:
@@ -324,7 +325,6 @@ if user_input:
                 + "\n"
             )
 
-        # Hard-locked system prompt: only retrieved PDF content + deterministic vendor context.
         system_prompt = (
             "SYSTEM CONSTRAINTS (MANDATORY):\n"
             "1) Use ONLY the retrieved PDF excerpts provided in {context}.\n"
@@ -334,16 +334,34 @@ if user_input:
             "4) If vendor context is present, you MUST use its Tier & Scores and MUST NOT claim you need them.\n"
             "5) If asked for evidence not present in {context}, write: 'Not in corpus.'\n"
             "6) Do NOT output a 'Citations:' line; citations are appended programmatically.\n\n"
-            "OUTPUT FORMAT (STRICT):\n"
+
+            "OUTPUT MODE SELECTION (MANDATORY):\n"
+            "If the question is about vendor risk, remediation, controls, supply chain, deployment, or incident response → use FORMAT A.\n"
+            "If the question is about skills, experience, architecture, research, tools, background, or portfolio explanation → use FORMAT B.\n\n"
+
+            "FORMAT A — Operational (ONLY when appropriate):\n"
             "A) Vendor Tier & Scores (if vendor context exists)\n"
             "B) Do-First (0–30 days): max 3 bullets\n"
             "C) Do-Next (31–60 days): max 3 bullets\n"
             "D) Do-Later (61–90 days): max 3 bullets\n"
-            "E) Evidence Notes: 2–4 bullets. Each bullet MUST include a short quoted phrase (≤10 words) copied from {context}. "
-            "If you cannot quote support, label that bullet 'Not in corpus.'\n\n"
+            "E) Evidence Notes: 2–4 bullets.\n\n"
+
+            "FORMAT B — Recruiter / Technical (DEFAULT):\n"
+            "A) Core Capability Summary (2–3 bullets)\n"
+            "B) Systems / Architecture Involved\n"
+            "C) Methods & Technologies Used\n"
+            "D) Why This Matters (impact / differentiation)\n"
+            "E) Evidence Notes: 2–4 bullets.\n\n"
+
+            "EVIDENCE NOTES RULE (STRICT):\n"
+            "- Each Evidence Notes bullet MUST include a short quoted phrase (≤10 words) copied from {context}.\n"
+            "- If you cannot quote support, label that bullet exactly: 'Not in corpus.'\n\n"
+
             "STYLE:\n"
-            "- Operational actions + deliverables; avoid generic advice.\n"
+            "- Be concrete: actions, artifacts, decision points.\n"
+            "- Avoid generic advice.\n"
             "- When relevant, reflect: network/control plane, forensics/IR, strategic C2/entropy, corporate impact.\n\n"
+
             "Retrieved PDF Context: {context}"
             + vendor_block
         )
@@ -391,5 +409,3 @@ if user_input:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-
-
