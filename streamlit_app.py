@@ -172,7 +172,11 @@ def init_knowledge_base():
         st.stop()
 
     loader = PyPDFDirectoryLoader("data/")
-    docs = loader.load()
+    try:
+        docs = loader.load()
+    except Exception as e:
+        st.error(f"Failed to load PDFs from `/data`: {e}")
+        st.stop()
 
     if not docs:
         st.error("No documents found in `/data`.")
@@ -321,6 +325,8 @@ with st.sidebar:
                     missing = sorted(list(required_cols - set(df.columns)))
                     if missing:
                         st.error(f"CSV missing required columns: {missing}")
+                    elif len(df) == 0:
+                        st.error("CSV loaded but contains zero rows.")
                     else:
                         def _score_row(r):
                             s = score_overall(r.to_dict(), weight_fw=weight_fw)
@@ -344,6 +350,18 @@ with st.sidebar:
                         row = out.iloc[int(i)].to_dict()
 
                         if st.button("Use selected vendor in chat", key="use_vendor_ctx"):
+                            overall = row.get("overall_risk", 0.0)
+                            try:
+                                overall_f = float(overall)
+                            except Exception:
+                                overall_f = 0.0
+
+                            mits = mitigation_playbook(overall_f)
+                            if mits is None:
+                                mits = []
+                            elif isinstance(mits, str):
+                                mits = [mits]
+
                             st.session_state.selected_vendor_context = {
                                 "vendor_name": row.get("vendor_name"),
                                 "product_or_component": row.get("product_or_component"),
@@ -351,11 +369,11 @@ with st.sidebar:
                                 "origin_jurisdiction": row.get("origin_jurisdiction"),
                                 "criticality": row.get("criticality"),
                                 "contains_ree_magnets": row.get("contains_ree_magnets"),
-                                "ree_risk": float(row.get("ree_risk", 0.0)),
-                                "firmware_risk": float(row.get("firmware_risk", 0.0)),
-                                "overall_risk": float(row.get("overall_risk", 0.0)),
+                                "ree_risk": float(row.get("ree_risk", 0.0) or 0.0),
+                                "firmware_risk": float(row.get("firmware_risk", 0.0) or 0.0),
+                                "overall_risk": overall_f,
                                 "tier": row.get("tier"),
-                                "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
+                                "mitigations": mits,
                             }
                             st.success("Vendor context stored. Ask a vendor/control question in chat.")
 
@@ -387,10 +405,13 @@ st.markdown(
 st.caption("Scope boundary: public-safe responses from the loaded corpus only. No external citations are generated.")
 st.write("")
 
-# --- Middle / main MODE toggle (the requested change) ---
+# --- Middle / main MODE toggle ---
 mid_left, mid_right = st.columns([1.25, 2.0], gap="large")
 with mid_left:
-    st.markdown('<div class="dk-card"><b>Response mode</b><br/><span style="color:#A1A1AA">Choose audience to shape tone + focus.</span></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="dk-card"><b>Response mode</b><br/><span style="color:#A1A1AA">Choose audience to shape tone + focus.</span></div>',
+        unsafe_allow_html=True,
+    )
     mode = st.radio(
         "Mode",
         list(MODE_OPTIONS.keys()),
@@ -498,14 +519,23 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-default_prompt = st.session_state.pop("prefill", "")
+# --- FIXED: chat_input prefill (st.chat_input does NOT support value=) ---
+if "chat_text" not in st.session_state:
+    st.session_state.chat_text = ""
+
+prefill = st.session_state.pop("prefill", "")
+if prefill:
+    st.session_state.chat_text = prefill
 
 user_input = st.chat_input(
     "Ask about NAMECOMMS, WarSim, AI/ML systems, firmware risk, or this portfolio…",
-    value=default_prompt,
+    key="chat_text",
 )
 
 if user_input:
+    # optional: clear the input after send
+    st.session_state.chat_text = ""
+
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -521,6 +551,10 @@ if user_input:
 
         vendor_block = ""
         if vendor_ctx:
+            mits = vendor_ctx.get("mitigations") or []
+            if isinstance(mits, str):
+                mits = [mits]
+
             vendor_block = (
                 "\n\nSelected Vendor Context (deterministic):\n"
                 f"- Vendor: {vendor_ctx.get('vendor_name')}\n"
@@ -531,11 +565,14 @@ if user_input:
                 f"- Tier: {vendor_ctx.get('tier')}\n"
                 f"- Scores: REE={vendor_ctx.get('ree_risk')}, FW={vendor_ctx.get('firmware_risk')}, Overall={vendor_ctx.get('overall_risk')}\n"
                 "Mitigation priorities (deterministic):\n"
-                + "\n".join([f"- {m}" for m in vendor_ctx.get("mitigations", [])])
+                + "\n".join([f"- {m}" for m in mits])
                 + "\n"
             )
 
-        system_prompt = build_system_prompt(st.session_state.get("mode_toggle", "Recruiter / Hiring Manager"), vendor_block)
+        system_prompt = build_system_prompt(
+            st.session_state.get("mode_toggle", "Recruiter / Hiring Manager"),
+            vendor_block,
+        )
 
         prompt = ChatPromptTemplate.from_messages(
             [
