@@ -3,7 +3,7 @@ import os
 import re
 import pandas as pd
 
-from langchain_community.document_loaders import PyPDFDirectoryLoadersystem_prompt
+from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -109,7 +109,6 @@ def init_knowledge_base():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(documents)
 
-    # Use the OpenAI key from Streamlit secrets
     embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
 
     with st.status("🔗 Operationalizing Cross-Domain Intelligence...", expanded=False) as status:
@@ -131,7 +130,7 @@ with st.sidebar:
     st.header("Dr. Stephen Dietrich-Kolokouris")
     st.caption("Applied Security • Systems Analysis • Data Engineering")
 
-    # Subtle public-safe / evidence-only notice (CISO / Gov norms)
+    # Public-safe / evidence-only notice (CISO / Gov norms)
     st.info(
         "Public-safe mode: responses are generated only from the loaded corpus. "
         "If evidence is not present, the system will respond 'Not in corpus.' "
@@ -141,7 +140,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Rename to CISO/Gov contracting phrasing
     st.subheader("Operational Readiness Controls")
     st.markdown(
         "- **Evidence-based retrieval** (RAG)\n"
@@ -293,7 +291,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-user_input = st.chat_input("Ask about BGP, WarSim nodes, Mobile Forensics, Historical C2, or a selected vendor...")
+user_input = st.chat_input("Ask about NAMECOMMS, BGP, WarSim nodes, Mobile Forensics, Historical C2, or a selected vendor...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -308,9 +306,19 @@ if user_input:
         )
 
         vendor_ctx = st.session_state.get("selected_vendor_context")
+        has_vendor = bool(vendor_ctx)
+
+        # Lightweight intent classification
+        q = user_input.lower()
+        operational_keywords = [
+            "vendor", "supply chain", "mitigation", "remediation", "controls",
+            "hardening", "incident", "response", "contain", "eradicate", "recover",
+            "patch", "sbom", "attestation", "audit", "firmware update", "secure boot"
+        ]
+        is_operational = any(k in q for k in operational_keywords) and has_vendor
 
         vendor_block = ""
-        if vendor_ctx:
+        if has_vendor:
             vendor_block = (
                 "\n\nSelected Vendor Risk Context (deterministic tool output):\n"
                 f"- Vendor: {vendor_ctx.get('vendor_name')}\n"
@@ -325,34 +333,55 @@ if user_input:
                 + "\n"
             )
 
-# Updated System Prompt with clearer branching logic
-system_prompt = (
-    "SYSTEM CONSTRAINTS (MANDATORY):\n"
-    "1) Use ONLY retrieved PDF context: {context}\n"
-    "2) If a vendor is provided in 'Vendor Context', use that data for Format A.\n"
-    "3) STICK TO THE ASSIGNED FORMAT BASED ON INTENT.\n\n"
+        # ---------- FORMAT B (DEFAULT) ----------
+        system_prompt_recruiter = (
+            "SYSTEM CONSTRAINTS (MANDATORY):\n"
+            "1) Use ONLY the retrieved PDF excerpts provided in {context}.\n"
+            "2) Do NOT introduce bibliography-style references (e.g., 'Author et al. (2017)', '(Author, 2020)', '[1]') "
+            "or a References/Citations section.\n"
+            "3) If asked for evidence not present in {context}, write exactly: 'Not in corpus.'\n"
+            "4) Do NOT output a 'Citations:' line; citations are appended programmatically.\n\n"
 
-    "INTENT CLASSIFICATION:\n"
-    "- If user query contains [RISK-TRACK], or asks about 'mitigations', 'vendor risk', 'supply chain', or 'scores' -> Use FORMAT A.\n"
-    "- DEFAULT: For all other queries (skills, PhD, BGP, experience, architecture, resume) -> Use FORMAT B.\n\n"
+            "OUTPUT FORMAT — Recruiter / Technical (DEFAULT):\n"
+            "A) Core Capability Summary (2–3 bullets)\n"
+            "B) System / Pipeline (inputs → transforms → outputs)\n"
+            "C) Methods & Technologies (concrete nouns; avoid generic fluff)\n"
+            "D) Validation / QA (how signal vs noise is separated)\n"
+            "E) Evidence Notes: 2–4 bullets, each includes a short quoted phrase (≤10 words) copied from {context}. "
+            "If you cannot quote support, write 'Not in corpus.'\n\n"
 
-    "FORMAT A (Operational):\n"
-    "A) Vendor Tier & Scores\n"
-    "B) Do-First (0–30 days)\n"
-    "C) Do-Next (31–60 days)\n"
-    "D) Do-Later (61–90 days)\n"
-    "E) Evidence Notes (Quotes from context)\n\n"
+            "STYLE:\n"
+            "- Write like a security/data engineering lead.\n"
+            "- Prefer artifacts and measurable checks.\n\n"
 
-    "FORMAT B (Technical/Portfolio - DEFAULT):\n"
-    "A) Core Capability Summary\n"
-    "B) Systems / Architecture Involved\n"
-    "C) Methods & Technologies Used\n"
-    "D) Why This Matters\n"
-    "E) Evidence Notes (Quotes from context)\n\n"
-    
-    "Retrieved PDF Context: {context}\n"
-    + vendor_block
-)
+            "Retrieved PDF Context: {context}"
+        )
+
+        # ---------- FORMAT A (ONLY when vendor context exists AND question is operational) ----------
+        system_prompt_operational = (
+            "SYSTEM CONSTRAINTS (MANDATORY):\n"
+            "1) Use ONLY the retrieved PDF excerpts provided in {context}.\n"
+            "2) You may also use the Selected Vendor Risk Context.\n"
+            "3) Do NOT introduce bibliography-style references (e.g., 'Author et al. (2017)', '(Author, 2020)', '[1]') "
+            "or a References/Citations section.\n"
+            "4) If vendor context is present, you MUST use its Tier & Scores and MUST NOT claim you need them.\n"
+            "5) If asked for evidence not present in {context}, write exactly: 'Not in corpus.'\n"
+            "6) Do NOT output a 'Citations:' line; citations are appended programmatically.\n\n"
+
+            "OUTPUT FORMAT — Operational (ONLY when vendor context exists):\n"
+            "A) Vendor Tier & Scores\n"
+            "B) Do-First (0–30 days): max 3 bullets (each bullet = verb + deliverable + measure)\n"
+            "C) Do-Next (31–60 days): max 3 bullets (each bullet = verb + deliverable + measure)\n"
+            "D) Do-Later (61–90 days): max 3 bullets (each bullet = verb + deliverable + measure)\n"
+            "E) Evidence Notes: 2–4 bullets, each includes a short quoted phrase (≤10 words) copied from {context}. "
+            "If you cannot quote support, write 'Not in corpus.'\n\n"
+
+            "Retrieved PDF Context: {context}"
+            + vendor_block
+        )
+
+        system_prompt = system_prompt_operational if is_operational else system_prompt_recruiter
+
         prompt_tmpl = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             ("human", "{question}"),
@@ -367,13 +396,12 @@ system_prompt = (
             input_key="query"
         )
 
-        # Force vendor context into question payload to reduce forgetfulness
-        if vendor_ctx and any(word in user_input.lower() for word in ["risk", "mitigation", "score", "vendor", "remediation"]):
-    # Only tag it as a risk query if the user is actually asking about risk/vendors
-    question_payload = f"[RISK-TRACK] {user_input}"
-else:
-    # Otherwise, pass the query cleanly to ensure Format B is the default
-    question_payload = user_input
+        # Force vendor context into question payload to reduce forgetfulness (only when present)
+        if has_vendor:
+            question_payload = (
+                f"[SelectedVendor={vendor_ctx.get('vendor_name')} Tier={vendor_ctx.get('tier')} "
+                f"Scores REE={vendor_ctx.get('ree_risk')} FW={vendor_ctx.get('firmware_risk')} Overall={vendor_ctx.get('overall_risk')}]\n"
+                f"{user_input}"
             )
         else:
             question_payload = user_input
@@ -397,4 +425,3 @@ else:
 
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-
