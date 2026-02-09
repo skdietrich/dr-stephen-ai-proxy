@@ -720,122 +720,14 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
-    if safe_exists(LOGO_PATH):
-        st.image(LOGO_PATH, use_container_width=True)
     if safe_exists(HEADSHOT_PATH):
-        st.image(HEADSHOT_PATH, width=180)
+        st.image(HEADSHOT_PATH, use_container_width=True)
+    elif safe_exists(LOGO_PATH):
+        st.image(LOGO_PATH, use_container_width=True)
 
     st.markdown("### Dr. Stephen Dietrich-Kolokouris")
     st.caption("PhD · CCIE · Cybersecurity · AI Systems · Data Engineering")
-    st.markdown("---")
     st.link_button("🔗  LinkedIn", LINKEDIN_URL, use_container_width=True)
-    st.markdown("---")
-
-    st.session_state.personal_mode = st.toggle(
-        "Conversational style",
-        value=st.session_state.personal_mode,
-        help="Adds career narrative and context to answers.",
-    )
-
-    with st.expander("About", expanded=False):
-        if safe_exists(ABOUT_MD_PATH):
-            st.markdown(_read_file_safe(ABOUT_MD_PATH))
-        else:
-            st.markdown("_Career narrative available when `assets/about_stephen.md` is added._")
-
-    with st.expander("Approach & Methodology", expanded=False):
-        if safe_exists(THINK_MD_PATH):
-            st.markdown(_read_file_safe(THINK_MD_PATH))
-        else:
-            st.markdown("_Decision-making approach available when `assets/how_i_think.md` is added._")
-
-    with st.expander("Publications", expanded=False):
-        if safe_exists(PUBS_CSV_PATH):
-            try:
-                st.dataframe(pd.read_csv(PUBS_CSV_PATH), use_container_width=True, hide_index=True)
-            except Exception as e:
-                st.error(f"Could not load publications: {e}")
-        else:
-            st.markdown("_Publication list available when `assets/publications.csv` is added._")
-
-    if SCORING_ENABLED:
-        with st.expander("Supply Chain Risk Scoring", expanded=False):
-            weight_fw = st.slider("Firmware weight", 0.0, 1.0, 0.55, 0.05, key="weight_fw")
-            uploaded_csv = st.file_uploader("Upload vendor CSV", type=["csv"], key="vendor_csv_uploader")
-            if uploaded_csv is not None:
-                try:
-                    df = pd.read_csv(uploaded_csv)
-                except Exception as e:
-                    st.error(f"Could not read CSV: {e}")
-                    df = None
-                if df is not None:
-                    required_cols = {
-                        "vendor_name", "product_or_component", "component_class",
-                        "origin_jurisdiction", "criticality", "contains_ree_magnets",
-                        "firmware_ota", "firmware_signing", "secure_boot_attestation",
-                        "sbom_available", "remote_admin_access", "telemetry_logging",
-                        "alt_supplier_available", "known_single_point_of_failure",
-                    }
-                    missing = sorted(list(required_cols - set(df.columns)))
-                    if missing:
-                        st.error(f"Missing columns: {missing}")
-                    else:
-                        scores = df.apply(lambda r: pd.Series(score_overall(r.to_dict(), weight_fw=weight_fw)), axis=1)
-                        out_df = pd.concat([df, scores], axis=1)
-                        out_df["tier"] = out_df["overall_risk"].apply(tier_from_score)
-                        st.dataframe(out_df.sort_values("overall_risk", ascending=False).head(10), use_container_width=True)
-                        idx = st.number_input("Row", min_value=0, max_value=max(0, len(out_df)-1), value=0, step=1, key="vendor_row_idx")
-                        row = out_df.iloc[int(idx)].to_dict()
-                        if st.button("Load into conversation", key="use_vendor_ctx"):
-                            st.session_state.selected_vendor_context = {
-                                "vendor_name": row.get("vendor_name"),
-                                "product_or_component": row.get("product_or_component"),
-                                "component_class": row.get("component_class"),
-                                "origin_jurisdiction": row.get("origin_jurisdiction"),
-                                "criticality": row.get("criticality"),
-                                "contains_ree_magnets": row.get("contains_ree_magnets"),
-                                "ree_risk": float(row.get("ree_risk", 0.0)),
-                                "firmware_risk": float(row.get("firmware_risk", 0.0)),
-                                "overall_risk": float(row.get("overall_risk", 0.0)),
-                                "tier": row.get("tier"),
-                                "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
-                            }
-                            st.success("Loaded.")
-
-    with st.expander("Export conversation (PDF)", expanded=False):
-        if not REPORTLAB_OK:
-            st.caption("PDF export requires `reportlab` in requirements.txt")
-        else:
-            if st.button("Download PDF transcript", type="primary"):
-                export_msgs = [
-                    {"role": (m.get("role") or "").lower(), "content": m.get("content") or ""}
-                    for m in st.session_state.messages
-                    if (m.get("role") or "").lower() in ("user", "assistant")
-                ]
-                evidence_files = sorted(set(st.session_state.get("qa_evidence_files", []) or []))
-                pdf_bytes = build_qa_pdf_bytes(
-                    "Q&A — Dr. Stephen Dietrich-Kolokouris",
-                    export_msgs, evidence_files,
-                )
-                st.download_button(
-                    "Save PDF", data=pdf_bytes,
-                    file_name="QA_Stephen_Dietrich_Kolokouris.pdf",
-                    mime="application/pdf",
-                )
-
-    # Admin (collapsed, out of the way)
-    with st.expander("Admin", expanded=False):
-        if st.button("Rebuild index"):
-            try:
-                if os.path.exists(MANIFEST_PATH):
-                    os.remove(MANIFEST_PATH)
-            except Exception:
-                pass
-            init_retriever.clear()
-            st.rerun()
-        if st.button("Clear conversation context"):
-            st.session_state.recruiter_state = _EMPTY_RECRUITER_STATE.copy()
-            st.success("Context cleared.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
