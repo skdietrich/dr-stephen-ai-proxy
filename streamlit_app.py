@@ -771,3 +771,4 @@ if user_input:
         answer = run_turn(user_input, action_mode="chat")
         st.markdown(answer, unsafe_allow_html=True)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
