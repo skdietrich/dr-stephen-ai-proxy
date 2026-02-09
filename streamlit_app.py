@@ -1,7 +1,6 @@
-“””
-Dr. Stephen Dietrich-Kolokouris — Portfolio RAG Interface
-Complete production build: premium UI + full backend.
-“””
+# Dr. Stephen Dietrich-Kolokouris – Portfolio RAG Interface
+
+# Complete production build: premium UI + full backend.
 
 import hashlib
 import json
@@ -193,7 +192,7 @@ if not docs:
 splitter = RecursiveCharacterTextSplitter(chunk_size=1100, chunk_overlap=160)
 chunks = splitter.split_documents(docs)
 
-with st.status("Indexing corpus…", expanded=False) as status:
+with st.status("Indexing corpus...", expanded=False) as status:
     vs = FAISS.from_documents(chunks, embeddings)
     status.update(label="Corpus indexed", state="complete")
 
@@ -256,7 +255,7 @@ for d in docs:
     if not text:
         continue
     if len(text) > 2200:
-        text = text[:2200].rstrip() + "…"
+        text = text[:2200].rstrip() + "..."
 
     parts.append(f"[SOURCE: {label}]\n{text}")
     labels.append(label)
@@ -383,14 +382,14 @@ if personal_mode:
         "TONE MODE: Conversational.\n"
         "- You may include brief career context and lessons learned ONLY if supported by the evidence.\n"
         "- Keep it recruiter-friendly and precise. No hype.\n"
-        "- Don't use phrases like 'based on the evidence pack' or 'according to the corpus' — "
+        "- Don't use phrases like 'based on the evidence pack' or 'according to the corpus' -- "
         "just state the information naturally.\n"
     )
 else:
     tone_line = (
         "TONE MODE: Technical-only.\n"
         "- Direct, systems-focused, implementation-oriented.\n"
-        "- Don't reference the evidence system — just state information naturally.\n"
+        "- Don't reference the evidence system -- just state information naturally.\n"
     )
 
 action_map = {
@@ -407,7 +406,7 @@ action_map = {
     ),
     "outreach": (
         "TASK MODE: OUTREACH.\n"
-        "- Draft a recruiter outreach message (100–160 words) based on recruiter context.\n"
+        "- Draft a recruiter outreach message (100-160 words) based on recruiter context.\n"
         "- Use only evidence-backed claims.\n"
         "- If key context is missing (role/location), ask ONE short question at the end.\n"
     ),
@@ -425,7 +424,7 @@ return (
     "2) Do NOT invent facts, dates, employers, credentials, or project details.\n"
     "3) If the answer cannot be supported, say it's not in the current documentation.\n"
     "4) Do NOT include URLs or bibliography headings.\n"
-    "5) Never reference 'the corpus', 'evidence pack', or 'the system' — speak naturally.\n\n"
+    "5) Never reference 'the corpus', 'evidence pack', or 'the system' -- speak naturally.\n\n"
     f"RECRUITER CONTEXT JSON:\n{state_text}\n\n"
     + tone_line + "\n"
     + action_instructions + "\n\n"
@@ -490,7 +489,7 @@ y = h - margin
 
 ```
 c.setFont("Helvetica-Bold", 14)
-c.drawString(margin, y, "Q&A Transcript — Dr. Stephen Dietrich-Kolokouris")
+c.drawString(margin, y, "Q&A Transcript -- Dr. Stephen Dietrich-Kolokouris")
 y -= 24
 c.setFont("Helvetica", 9)
 c.drawString(margin, y, f"Evidence files: {', '.join(evidence_files) if evidence_files else 'None'}")
@@ -875,10 +874,10 @@ st.markdown("---")
 # ── At a Glance ──
 st.markdown('<div class="sb-section-title">At a Glance</div>', unsafe_allow_html=True)
 st.markdown("""
-<div class="sb-item"><strong>Security Architecture</strong> — Pen testing, IR, supply chain risk analysis for critical infrastructure</div>
-<div class="sb-item"><strong>AI / RAG Systems</strong> — Production retrieval-augmented generation pipelines, LangChain, vector DBs</div>
-<div class="sb-item"><strong>Intelligence</strong> — Former CIA contractor supporting CT operations (Al-Qaeda, ISIS theaters)</div>
-<div class="sb-item"><strong>Research & Publishing</strong> — 7 books, PhD (Goethe Univ. Frankfurt), WarSim Algorithm (DoD-submitted)</div>
+<div class="sb-item"><strong>Security Architecture</strong> -- Pen testing, IR, supply chain risk analysis for critical infrastructure</div>
+<div class="sb-item"><strong>AI / RAG Systems</strong> -- Production retrieval-augmented generation pipelines, LangChain, vector DBs</div>
+<div class="sb-item"><strong>Intelligence</strong> -- Former CIA contractor supporting CT operations (Al-Qaeda, ISIS theaters)</div>
+<div class="sb-item"><strong>Research & Publishing</strong> -- 7 books, PhD (Goethe Univ. Frankfurt), WarSim Algorithm (DoD-submitted)</div>
 """, unsafe_allow_html=True)
 
 st.markdown("---")
@@ -1025,7 +1024,7 @@ st.session_state.messages.append({“role”: “assistant”, “content”: an
 
 if st.session_state.pinned_opening and not st.session_state.messages:
 pinned = (
-“Good to meet you. Tell me about the role you’re looking to fill — “
+“Good to meet you. Tell me about the role you’re looking to fill – “
 “I’ll walk you through how Stephen’s experience lines up, with specifics.”
 )
 st.session_state.messages.append({“role”: “assistant”, “content”: pinned})
