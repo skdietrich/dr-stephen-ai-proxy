@@ -9,36 +9,14 @@ import re
 import json
 import hashlib
 import logging
-from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 
-import pandas as pd
 import streamlit as st
 
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-
-try:
-    from langchain_core.prompts import ChatPromptTemplate
-except Exception:
-    from langchain.prompts import ChatPromptTemplate
-
-try:
-    from reportlab.lib.pagesizes import LETTER
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.units import inch
-    REPORTLAB_OK = True
-except Exception:
-    REPORTLAB_OK = False
-
-try:
-    from scoring import score_overall
-    from mitigations import tier_from_score, mitigation_playbook
-    SCORING_ENABLED = True
-except Exception:
-    SCORING_ENABLED = False
 
 logger = logging.getLogger(__name__)
 
@@ -77,10 +55,6 @@ def first_existing(paths: List[str]) -> Optional[str]:
             return p
     return None
 
-def _read_file_safe(path: str) -> str:
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
-
 LOGO_PATH = first_existing([
     os.path.join("assets", "logo.png"), os.path.join("assets", "logo.jpg"),
     os.path.join("assets", "logo.jpeg"), "logo.png", "logo.jpg", "logo.jpeg",
@@ -89,9 +63,6 @@ HEADSHOT_PATH = first_existing([
     os.path.join("assets", "headshot.png"), os.path.join("assets", "headshot.jpg"),
     os.path.join("assets", "headshot.jpeg"), "headshot.png", "headshot.jpg", "headshot.jpeg",
 ])
-ABOUT_MD_PATH = first_existing([os.path.join("assets", "about_stephen.md"), "about_stephen.md"])
-THINK_MD_PATH = first_existing([os.path.join("assets", "how_i_think.md"), "how_i_think.md"])
-PUBS_CSV_PATH = first_existing([os.path.join("assets", "publications.csv"), "publications.csv"])
 LINKEDIN_URL = "https://www.linkedin.com/in/stephendietrich-kolokouris/"
 
 
@@ -99,8 +70,8 @@ LINKEDIN_URL = "https://www.linkedin.com/in/stephendietrich-kolokouris/"
 # PAGE CONFIG + STYLES
 # ═══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Dr. Stephen Dietrich-Kolokouris, PhD",
-    page_icon="🛡️",
+    page_title="Stephen Dietrich-Kolokouris",
+    page_icon="◆",
     layout="wide",
 )
 
@@ -109,14 +80,13 @@ st.markdown("""<style>
 :root {
   --bg:         #0B0F19;
   --bg-surface: #101624;
-  --bg-card:    #151C2E;
-  --border:     rgba(148,163,184,0.10);
-  --border-lit: rgba(148,163,184,0.18);
+  --bg-card:    #131A2B;
+  --border:     rgba(148,163,184,0.08);
+  --border-lit: rgba(148,163,184,0.15);
   --txt:        #D8DEE9;
-  --txt-dim:    #7B8599;
-  --txt-faint:  #4E576B;
+  --txt-dim:    #8B95A8;
+  --txt-faint:  #555F73;
   --accent:     #C9A84C;
-  --accent-dim: rgba(201,168,76,0.12);
   --font:       'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --radius:     8px;
 }
@@ -127,57 +97,56 @@ html, body, [class*="stApp"] {
   font-family: var(--font) !important;
 }
 .main .block-container {
-  padding-top: 0.8rem !important;
+  padding-top: 1rem !important;
   padding-bottom: 2rem !important;
-  max-width: 960px;
+  max-width: 880px;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────── */
+/* Sidebar */
 section[data-testid="stSidebar"] {
-  background: #090D16 !important;
+  background: #080C15 !important;
   border-right: 1px solid var(--border);
 }
-section[data-testid="stSidebar"] .block-container { padding-top: 1.4rem; }
-section[data-testid="stSidebar"] [data-testid="stMarkdown"] p,
-section[data-testid="stSidebar"] [data-testid="stMarkdown"] li {
+section[data-testid="stSidebar"] .block-container { padding-top: 1.6rem; }
+section[data-testid="stSidebar"] [data-testid="stMarkdown"] p {
   font-size: 0.88rem; color: var(--txt-dim);
 }
 section[data-testid="stSidebar"] h3 {
-  font-size: 1.05rem !important; color: var(--txt) !important;
-  margin-bottom: 2px !important;
+  font-size: 1.02rem !important; color: var(--txt) !important;
+  font-weight: 600 !important; margin-bottom: 0 !important;
 }
 
-/* ── Header ──────────────────────────────────────────────── */
+/* Header */
 .hdr {
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 16px;
-  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-lit);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
 }
 .hdr-name {
-  font-size: 1.45rem; font-weight: 700; color: #fff;
-  margin: 0; line-height: 1.3;
+  font-size: 1.35rem; font-weight: 700; color: #fff;
+  margin: 0; line-height: 1.3; letter-spacing: -0.01em;
 }
 .hdr-role {
-  font-size: 0.88rem; color: var(--accent);
-  font-weight: 500; letter-spacing: 0.03em;
-  margin: 2px 0 10px;
-}
-.hdr-bio {
-  font-size: 0.86rem; color: var(--txt-dim);
-  line-height: 1.55; max-width: 640px;
+  font-size: 0.84rem; color: var(--txt-dim);
+  font-weight: 400; letter-spacing: 0.02em;
+  margin: 4px 0 0;
 }
 
-/* ── Chat ────────────────────────────────────────────────── */
+/* Chat — no borders, subtle background shift only */
 [data-testid="stChatMessage"] {
-  border: 1px solid var(--border) !important;
+  border: none !important;
   border-radius: var(--radius) !important;
-  background: var(--bg-card) !important;
-  margin-bottom: 6px !important;
+  background: transparent !important;
+  padding: 10px 4px !important;
+  margin-bottom: 2px !important;
   font-family: var(--font) !important;
 }
 [data-testid="stChatMessage"] p {
-  font-size: 0.9rem !important; line-height: 1.6 !important;
+  font-size: 0.9rem !important; line-height: 1.65 !important;
+  color: var(--txt) !important;
 }
+
+/* Chat input */
 [data-testid="stChatInput"] {
   border-color: var(--border-lit) !important;
   background: var(--bg-surface) !important;
@@ -188,17 +157,7 @@ section[data-testid="stSidebar"] h3 {
   color: var(--txt) !important;
 }
 
-/* ── Source citations (subtle) ───────────────────────────── */
-.src-line {
-  font-size: 0.74rem;
-  color: var(--txt-faint);
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border);
-  font-style: italic;
-}
-
-/* ── Buttons ─────────────────────────────────────────────── */
+/* Buttons */
 .stButton > button {
   font-family: var(--font) !important;
   font-size: 0.82rem !important;
@@ -209,33 +168,21 @@ section[data-testid="stSidebar"] h3 {
   border-color: var(--accent) !important;
   color: var(--accent) !important;
 }
-.stButton > button[kind="primary"],
-.stDownloadButton > button {
-  background: var(--accent) !important;
-  color: #0B0F19 !important;
-  font-weight: 600 !important;
-  border: none !important;
-}
 .stLinkButton > a {
   color: var(--accent) !important;
   border-color: var(--border-lit) !important;
+  font-family: var(--font) !important;
 }
 
-/* ── Expanders ───────────────────────────────────────────── */
-details[data-testid="stExpander"] {
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
-  background: var(--bg-card) !important;
-}
-
-/* ── Scrollbar ───────────────────────────────────────────── */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 3px; }
 
-/* ── Responsive ──────────────────────────────────────────── */
+/* Responsive */
 @media (max-width: 768px) {
-  .hdr-name { font-size: 1.2rem; }
+  .hdr-name { font-size: 1.15rem; }
+  .main .block-container { max-width: 100%; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -553,104 +500,14 @@ def build_vendor_block(vendor_ctx: Optional[dict]) -> str:
     )
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PDF EXPORT
-# ═══════════════════════════════════════════════════════════════════════════════
-def _sanitize_for_reportlab(text: str) -> str:
-    if not text:
-        return text
-    text = text.replace("\r", "")
-    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
-
-def _wrap_text_lines(text: str, max_chars: int = 95) -> List[str]:
-    text = _sanitize_for_reportlab(text or "")
-    out = []
-    for raw in text.split("\n"):
-        s = raw.strip()
-        if not s:
-            out.append("")
-            continue
-        while len(s) > max_chars:
-            cut = s.rfind(" ", 0, max_chars)
-            if cut == -1:
-                cut = max_chars
-            out.append(s[:cut].rstrip())
-            s = s[cut:].lstrip()
-        out.append(s)
-    return out
-
-def build_qa_pdf_bytes(title: str, messages: List[Dict], evidence_files: List[str]) -> bytes:
-    if not REPORTLAB_OK:
-        raise RuntimeError("reportlab not installed")
-    from io import BytesIO
-
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=LETTER)
-    width, height = LETTER
-    left, right, top, bottom = 0.85 * inch, 0.85 * inch, 0.85 * inch, 0.75 * inch
-    y = height - top
-
-    def new_page():
-        nonlocal y
-        c.showPage()
-        y = height - top
-
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(left, y, _sanitize_for_reportlab(title))
-    y -= 18
-    c.setFont("Helvetica", 9)
-    c.drawString(left, y, f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
-    y -= 14
-    c.setLineWidth(0.5)
-    c.line(left, y, width - right, y)
-    y -= 12
-
-    for m in messages:
-        role = (m.get("role") or "").lower()
-        content = m.get("content") or ""
-        label = "Q:" if role == "user" else "A:"
-        c.setFont("Helvetica-Bold", 10)
-        if y < bottom + 40:
-            new_page()
-        c.drawString(left, y, label)
-        y -= 12
-        c.setFont("Helvetica", 10)
-        for ln in _wrap_text_lines(content, max_chars=105):
-            if y < bottom + 14:
-                new_page()
-                c.setFont("Helvetica", 10)
-            c.drawString(left + 18, y, ln)
-            y -= 12
-        y -= 8
-
-    if evidence_files:
-        if y < bottom + 80:
-            new_page()
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(left, y, "Sources referenced")
-        y -= 16
-        c.setFont("Helvetica", 10)
-        for f in sorted(set(evidence_files)):
-            if y < bottom + 14:
-                new_page()
-                c.setFont("Helvetica", 10)
-            c.drawString(left, y, f"  {f}")
-            y -= 12
-
-    c.save()
-    buf.seek(0)
-    return buf.read()
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SESSION STATE
 # ═══════════════════════════════════════════════════════════════════════════════
 _SESSION_DEFAULTS = {
     "messages": [],
-    "personal_mode": False,
+    "personal_mode": True,
     "pinned_opening": True,
-    "qa_evidence_files": [],
-    "selected_vendor_context": None,
     "recruiter_state": _EMPTY_RECRUITER_STATE.copy(),
 }
 for k, v in _SESSION_DEFAULTS.items():
@@ -678,11 +535,6 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
     docs = retriever.invoke(standalone_query)
     evidence_pack, evidence_labels, evidence_files = format_evidence_pack(docs)
 
-    # Track for PDF export
-    if evidence_files:
-        existing = set(st.session_state.get("qa_evidence_files", []) or [])
-        st.session_state.qa_evidence_files = sorted(existing.union(set(evidence_files)))
-
     # Build prompt + get answer
     vendor_block = build_vendor_block(st.session_state.get("selected_vendor_context"))
     system_prompt = build_system_prompt(
@@ -704,15 +556,6 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
 
     answer = enforce_no_external_refs(answer)
 
-    # Subtle source line — only file names, no page numbers, no bold label
-    if evidence_labels:
-        file_names = sorted(set(
-            re.split(r"\s+\(p\.\d+\)$", lbl)[0] for lbl in evidence_labels
-        ))
-        if file_names:
-            sources = ", ".join(file_names)
-            answer += f'\n\n<div class="src-line">Sources: {sources}</div>'
-
     return answer
 
 
@@ -725,8 +568,8 @@ with st.sidebar:
     elif safe_exists(LOGO_PATH):
         st.image(LOGO_PATH, use_container_width=True)
 
-    st.markdown("### Dr. Stephen Dietrich-Kolokouris")
-    st.caption("PhD · CCIE · Cybersecurity · AI Systems · Data Engineering")
+    st.markdown("### Stephen Dietrich-Kolokouris, PhD")
+    st.caption("CCIE · Cybersecurity · AI/ML Systems · Data Engineering")
     st.link_button("🔗  LinkedIn", LINKEDIN_URL, use_container_width=True)
 
 
@@ -734,79 +577,28 @@ with st.sidebar:
 # MAIN LAYOUT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# ── Header (clean, professional — no badges, no status strip, no cards) ──
 st.markdown("""
 <div class="hdr">
-  <p class="hdr-name">Dr. Stephen Dietrich-Kolokouris, PhD</p>
+  <p class="hdr-name">Stephen Dietrich-Kolokouris, PhD</p>
   <p class="hdr-role">Cybersecurity · AI/ML Systems · Data Engineering · Strategic Analysis</p>
-  <p class="hdr-bio">
-    Ask me anything about Stephen's background, technical capabilities, project experience,
-    or fit for a role you're hiring for. Answers are based on his published work and project documentation.
-  </p>
 </div>
 """, unsafe_allow_html=True)
 
 # ── Pinned Opening ──
 if st.session_state.pinned_opening and not st.session_state.messages:
     pinned = (
-        "Hi — thanks for stopping by. I can answer questions about Stephen's "
-        "background, skills, and project experience.\n\n"
-        "A few ways to get started:\n\n"
-        "1. Tell me what role you're hiring for and I'll walk you through relevant experience\n"
-        "2. Ask about a specific domain — security architecture, RAG systems, supply chain, IR\n"
-        "3. Describe what success looks like in 90 days and I'll map it to his track record"
+        "Good to meet you. Tell me a bit about the role you're looking to fill "
+        "and I'll walk you through how Stephen's experience lines up."
     )
     st.session_state.messages.append({"role": "assistant", "content": pinned})
 
 # ── Chat History ──
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        st.markdown(m["content"], unsafe_allow_html=True)
+        st.markdown(m["content"])
 
-# ── Action Bar (human labels, no emoji overload) ──
-col_a, col_b, col_c = st.columns(3)
-with col_a:
-    do_verify = st.button("Check sources", use_container_width=True)
-with col_b:
-    do_fit = st.button("Summarize fit", use_container_width=True)
-with col_c:
-    do_outreach = st.button("Draft message", use_container_width=True)
-
-# ── Handle Action Buttons ──
-if do_verify:
-    last_assistant = None
-    for m in reversed(st.session_state.messages):
-        if (m.get("role") or "").lower() == "assistant":
-            last_assistant = (m.get("content") or "").strip()
-            break
-    if last_assistant:
-        with st.chat_message("assistant"):
-            answer = run_turn("Verify the previous answer:\n\n" + last_assistant, action_mode="verify")
-            st.markdown(answer, unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": answer})
-    else:
-        st.toast("Nothing to check yet.", icon="💬")
-
-if do_fit:
-    with st.chat_message("assistant"):
-        answer = run_turn(
-            "Summarize fit for the role and constraints discussed so far.",
-            action_mode="fit",
-        )
-        st.markdown(answer, unsafe_allow_html=True)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-
-if do_outreach:
-    with st.chat_message("assistant"):
-        answer = run_turn(
-            "Draft an outreach message based on what we've discussed.",
-            action_mode="outreach",
-        )
-        st.markdown(answer, unsafe_allow_html=True)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-
-# ── Normal Chat ──
-user_input = st.chat_input("Ask about skills, experience, projects, or role fit…")
+# ── Chat Input ──
+user_input = st.chat_input("Type a question…")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -815,5 +607,5 @@ if user_input:
 
     with st.chat_message("assistant"):
         answer = run_turn(user_input, action_mode="chat")
-        st.markdown(answer, unsafe_allow_html=True)
+        st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
