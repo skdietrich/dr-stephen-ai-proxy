@@ -223,23 +223,27 @@ section[data-testid="stSidebar"] h3 {
 }
 
 /* ── Expanders ───────────────────────────────────────────── */
-details[data-testid="stExpander"] {
+[data-testid="stExpander"],
+[data-testid="stExpander"] > details,
+[data-testid="stExpander"] details {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
   background: var(--bg-card) !important;
 }
 
 /* ── Scrollbar ───────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; }
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+/* Chromium / WebKit */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .hdr-name { font-size: 1.2rem; }
+  .hdr-name { font-size: 1.2rem !important; }
 }
-</style>
-""", unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -926,3 +930,4 @@ if user_input:
         answer = run_turn(user_input, action_mode="chat")
         st.markdown(answer, unsafe_allow_html=True)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
