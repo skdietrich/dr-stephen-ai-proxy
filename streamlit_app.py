@@ -133,11 +133,22 @@ html, body, [class*="stApp"] {
   max-width: 960px;
 }
 
+/* ── Sidebar ─────────────────────────────────────────────── */
 section[data-testid="stSidebar"] {
   background: #090D16 !important;
   border-right: 1px solid var(--border);
 }
+section[data-testid="stSidebar"] .block-container { padding-top: 1.4rem; }
+section[data-testid="stSidebar"] [data-testid="stMarkdown"] p,
+section[data-testid="stSidebar"] [data-testid="stMarkdown"] li {
+  font-size: 0.88rem; color: var(--txt-dim);
+}
+section[data-testid="stSidebar"] h3 {
+  font-size: 1.05rem !important; color: var(--txt) !important;
+  margin-bottom: 2px !important;
+}
 
+/* ── Header ──────────────────────────────────────────────── */
 .hdr {
   border-bottom: 1px solid var(--border);
   padding-bottom: 16px;
@@ -157,6 +168,7 @@ section[data-testid="stSidebar"] {
   line-height: 1.55; max-width: 640px;
 }
 
+/* ── Chat ────────────────────────────────────────────────── */
 [data-testid="stChatMessage"] {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
@@ -164,20 +176,20 @@ section[data-testid="stSidebar"] {
   margin-bottom: 6px !important;
   font-family: var(--font) !important;
 }
-
-.stButton > button {
+[data-testid="stChatMessage"] p {
+  font-size: 0.9rem !important; line-height: 1.6 !important;
+}
+[data-testid="stChatInput"] {
+  border-color: var(--border-lit) !important;
+  background: var(--bg-surface) !important;
+}
+[data-testid="stChatInput"] textarea {
   font-family: var(--font) !important;
-  font-size: 0.82rem !important;
+  font-size: 0.88rem !important;
+  color: var(--txt) !important;
 }
 
-.stButton > button[kind="primary"],
-.stDownloadButton > button {
-  background: var(--accent) !important;
-  color: #0B0F19 !important;
-  font-weight: 600 !important;
-  border: none !important;
-}
-
+/* ── Source citations (subtle) ───────────────────────────── */
 .src-line {
   font-size: 0.74rem;
   color: var(--txt-faint);
@@ -185,6 +197,46 @@ section[data-testid="stSidebar"] {
   padding-top: 6px;
   border-top: 1px solid var(--border);
   font-style: italic;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.stButton > button {
+  font-family: var(--font) !important;
+  font-size: 0.82rem !important;
+  border-color: var(--border-lit) !important;
+  color: var(--txt-dim) !important;
+}
+.stButton > button:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+.stButton > button[kind="primary"],
+.stDownloadButton > button {
+  background: var(--accent) !important;
+  color: #0B0F19 !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+.stLinkButton > a {
+  color: var(--accent) !important;
+  border-color: var(--border-lit) !important;
+}
+
+/* ── Expanders ───────────────────────────────────────────── */
+details[data-testid="stExpander"] {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  background: var(--bg-card) !important;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hdr-name { font-size: 1.2rem; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -669,11 +721,87 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
+    if safe_exists(LOGO_PATH):
+        st.image(LOGO_PATH, use_container_width=True)
+    if safe_exists(HEADSHOT_PATH):
+        st.image(HEADSHOT_PATH, width=180)
+
     st.markdown("### Dr. Stephen Dietrich-Kolokouris")
     st.caption("PhD · CCIE · Cybersecurity · AI Systems · Data Engineering")
     st.markdown("---")
-    st.link_button("🔗  LinkedIn Profile", LINKEDIN_URL, use_container_width=True)
+    st.link_button("🔗  LinkedIn", LINKEDIN_URL, use_container_width=True)
     st.markdown("---")
+
+    st.session_state.personal_mode = st.toggle(
+        "Conversational style",
+        value=st.session_state.personal_mode,
+        help="Adds career narrative and context to answers.",
+    )
+
+    with st.expander("About", expanded=False):
+        if safe_exists(ABOUT_MD_PATH):
+            st.markdown(_read_file_safe(ABOUT_MD_PATH))
+        else:
+            st.markdown("_Career narrative available when `assets/about_stephen.md` is added._")
+
+    with st.expander("Approach & Methodology", expanded=False):
+        if safe_exists(THINK_MD_PATH):
+            st.markdown(_read_file_safe(THINK_MD_PATH))
+        else:
+            st.markdown("_Decision-making approach available when `assets/how_i_think.md` is added._")
+
+    with st.expander("Publications", expanded=False):
+        if safe_exists(PUBS_CSV_PATH):
+            try:
+                st.dataframe(pd.read_csv(PUBS_CSV_PATH), use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.error(f"Could not load publications: {e}")
+        else:
+            st.markdown("_Publication list available when `assets/publications.csv` is added._")
+
+    if SCORING_ENABLED:
+        with st.expander("Supply Chain Risk Scoring", expanded=False):
+            weight_fw = st.slider("Firmware weight", 0.0, 1.0, 0.55, 0.05, key="weight_fw")
+            uploaded_csv = st.file_uploader("Upload vendor CSV", type=["csv"], key="vendor_csv_uploader")
+            if uploaded_csv is not None:
+                try:
+                    df = pd.read_csv(uploaded_csv)
+                except Exception as e:
+                    st.error(f"Could not read CSV: {e}")
+                    df = None
+                if df is not None:
+                    required_cols = {
+                        "vendor_name", "product_or_component", "component_class",
+                        "origin_jurisdiction", "criticality", "contains_ree_magnets",
+                        "firmware_ota", "firmware_signing", "secure_boot_attestation",
+                        "sbom_available", "remote_admin_access", "telemetry_logging",
+                        "alt_supplier_available", "known_single_point_of_failure",
+                    }
+                    missing = sorted(list(required_cols - set(df.columns)))
+                    if missing:
+                        st.error(f"Missing columns: {missing}")
+                    else:
+                        scores = df.apply(lambda r: pd.Series(score_overall(r.to_dict(), weight_fw=weight_fw)), axis=1)
+                        out_df = pd.concat([df, scores], axis=1)
+                        out_df["tier"] = out_df["overall_risk"].apply(tier_from_score)
+                        st.dataframe(out_df.sort_values("overall_risk", ascending=False).head(10), use_container_width=True)
+                        idx = st.number_input("Row", min_value=0, max_value=max(0, len(out_df)-1), value=0, step=1, key="vendor_row_idx")
+                        row = out_df.iloc[int(idx)].to_dict()
+                        if st.button("Load into conversation", key="use_vendor_ctx"):
+                            st.session_state.selected_vendor_context = {
+                                "vendor_name": row.get("vendor_name"),
+                                "product_or_component": row.get("product_or_component"),
+                                "component_class": row.get("component_class"),
+                                "origin_jurisdiction": row.get("origin_jurisdiction"),
+                                "criticality": row.get("criticality"),
+                                "contains_ree_magnets": row.get("contains_ree_magnets"),
+                                "ree_risk": float(row.get("ree_risk", 0.0)),
+                                "firmware_risk": float(row.get("firmware_risk", 0.0)),
+                                "overall_risk": float(row.get("overall_risk", 0.0)),
+                                "tier": row.get("tier"),
+                                "mitigations": mitigation_playbook(float(row.get("overall_risk", 0.0))),
+                            }
+                            st.success("Loaded.")
 
     with st.expander("Export conversation (PDF)", expanded=False):
         if not REPORTLAB_OK:
@@ -696,18 +824,33 @@ with st.sidebar:
                     mime="application/pdf",
                 )
 
+    # Admin (collapsed, out of the way)
+    with st.expander("Admin", expanded=False):
+        if st.button("Rebuild index"):
+            try:
+                if os.path.exists(MANIFEST_PATH):
+                    os.remove(MANIFEST_PATH)
+            except Exception:
+                pass
+            init_retriever.clear()
+            st.rerun()
+        if st.button("Clear conversation context"):
+            st.session_state.recruiter_state = _EMPTY_RECRUITER_STATE.copy()
+            st.success("Context cleared.")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN LAYOUT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# ── Header ──
+# ── Header (clean, professional — no badges, no status strip, no cards) ──
 st.markdown("""
 <div class="hdr">
   <p class="hdr-name">Dr. Stephen Dietrich-Kolokouris, PhD</p>
   <p class="hdr-role">Cybersecurity · AI/ML Systems · Data Engineering · Strategic Analysis</p>
   <p class="hdr-bio">
-    Ask me anything about Stephen's background, technical capabilities, or fit for a role.
+    Ask me anything about Stephen's background, technical capabilities, project experience,
+    or fit for a role you're hiring for. Answers are based on his published work and project documentation.
   </p>
 </div>
 """, unsafe_allow_html=True)
@@ -716,7 +859,11 @@ st.markdown("""
 if st.session_state.pinned_opening and not st.session_state.messages:
     pinned = (
         "Hi — thanks for stopping by. I can answer questions about Stephen's "
-        "background, skills, and project experience."
+        "background, skills, and project experience.\n\n"
+        "A few ways to get started:\n\n"
+        "1. Tell me what role you're hiring for and I'll walk you through relevant experience\n"
+        "2. Ask about a specific domain — security architecture, RAG systems, supply chain, IR\n"
+        "3. Describe what success looks like in 90 days and I'll map it to his track record"
     )
     st.session_state.messages.append({"role": "assistant", "content": pinned})
 
@@ -725,7 +872,7 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"], unsafe_allow_html=True)
 
-# ── Action Bar ──
+# ── Action Bar (human labels, no emoji overload) ──
 col_a, col_b, col_c = st.columns(3)
 with col_a:
     do_verify = st.button("Check sources", use_container_width=True)
@@ -746,16 +893,24 @@ if do_verify:
             answer = run_turn("Verify the previous answer:\n\n" + last_assistant, action_mode="verify")
             st.markdown(answer, unsafe_allow_html=True)
             st.session_state.messages.append({"role": "assistant", "content": answer})
+    else:
+        st.toast("Nothing to check yet.", icon="💬")
 
 if do_fit:
     with st.chat_message("assistant"):
-        answer = run_turn("Summarize fit.", action_mode="fit")
+        answer = run_turn(
+            "Summarize fit for the role and constraints discussed so far.",
+            action_mode="fit",
+        )
         st.markdown(answer, unsafe_allow_html=True)
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
 if do_outreach:
     with st.chat_message("assistant"):
-        answer = run_turn("Draft outreach.", action_mode="outreach")
+        answer = run_turn(
+            "Draft an outreach message based on what we've discussed.",
+            action_mode="outreach",
+        )
         st.markdown(answer, unsafe_allow_html=True)
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
@@ -771,4 +926,3 @@ if user_input:
         answer = run_turn(user_input, action_mode="chat")
         st.markdown(answer, unsafe_allow_html=True)
         st.session_state.messages.append({"role": "assistant", "content": answer})
-
