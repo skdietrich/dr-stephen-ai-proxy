@@ -27,7 +27,7 @@ import tempfile
 from io import BytesIO
 from typing import Dict, List, Optional, Tuple
 
-iimport streamlit as st
+import streamlit as st
 import streamlit.components.v1 as components
 
 from langchain_community.document_loaders import PyPDFDirectoryLoader
