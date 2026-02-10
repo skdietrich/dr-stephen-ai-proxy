@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris | Cybersecurity & AI Expert",
-    page_icon="🔐",
+    page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -620,7 +620,8 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
     answer += (
         '\n\n<div style="margin-top:1.5rem;padding-top:1rem;'
         'border-top:1px solid #e2e0db;font-size:0.88rem;color:#5a5f6b;">'
-        '💼 Want to discuss further? <a href="' + LINKEDIN_URL + '" target="_blank" '
+        '<span style="color:#1a5c3a;font-weight:600;">▸</span> Want to discuss further? '
+        '<a href="' + LINKEDIN_URL + '" target="_blank" '
         'style="color:#1a5c3a;font-weight:600;text-decoration:none;">'
         'Connect on LinkedIn →</a></div>'
     )
@@ -817,6 +818,26 @@ html, body, [data-testid="stAppViewContainer"] {
     transform: translateX(3px);
 }
 
+.link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(74,222,128,0.2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+}
+
+.stat-icon {
+    color: #4ade80;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
 /* ── Main Content Enhanced ── */
 .main-header { 
     max-width: 1000px; margin: 0 auto; padding: 3rem 1rem 1.5rem;
@@ -827,6 +848,12 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 0.85rem; font-weight: 600; letter-spacing: 1px;
     text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem;
     display: flex; align-items: center; gap: 8px;
+}
+
+.tagline-icon {
+    font-size: 1rem;
+    color: var(--accent);
+    font-weight: 700;
 }
 
 .main-greeting {
@@ -877,12 +904,27 @@ html, body, [data-testid="stAppViewContainer"] {
 .domain-card.research::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 
 .domain-icon { 
-    font-size: 1.8rem; margin-bottom: 0.8rem; display: block;
+    font-size: 1.8rem; margin-bottom: 0.8rem; display: flex;
+    align-items: center; justify-content: flex-start;
     transition: transform 0.3s ease;
 }
 
+.domain-icon svg {
+    color: var(--accent);
+    transition: all 0.3s ease;
+}
+
+.domain-card.cyber .domain-icon svg { color: #1a5c3a; }
+.domain-card.rag .domain-icon svg { color: #3b82f6; }
+.domain-card.intel .domain-icon svg { color: #c9a84c; }
+.domain-card.research .domain-icon svg { color: #8b5cf6; }
+
 .domain-card:hover .domain-icon {
     transform: scale(1.1);
+}
+
+.domain-card:hover .domain-icon svg {
+    filter: drop-shadow(0 2px 8px currentColor);
 }
 
 .domain-label { 
@@ -1024,6 +1066,20 @@ html, body, [data-testid="stAppViewContainer"] {
     font-family: 'DM Sans', sans-serif; transition: var(--transition);
     font-weight: 500;
     box-shadow: var(--shadow-sm);
+    position: relative;
+    padding-left: 14px;
+}
+
+.chip-btn::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
 }
 
 .chip-btn:hover { 
@@ -1098,7 +1154,7 @@ with st.sidebar:
     st.markdown('<div class="sb-section-title">Connect</div>', unsafe_allow_html=True)
     st.markdown(f"""
     <a href="{LINKEDIN_URL}" target="_blank" class="sb-link">
-        <span>🔗</span> LinkedIn Profile
+        <span class="link-icon">in</span> LinkedIn Profile
     </a>
     """, unsafe_allow_html=True)
 
@@ -1107,11 +1163,11 @@ with st.sidebar:
     # ── Quick Stats ──
     st.markdown('<div class="sb-section-title">Quick Stats</div>', unsafe_allow_html=True)
     st.markdown("""
-    <div class="sb-item">📊 <strong>20+ years</strong> in cybersecurity</div>
-    <div class="sb-item">📚 <strong>7 published books</strong></div>
-    <div class="sb-item">🎓 <strong>PhD in History</strong> (Goethe Univ.)</div>
-    <div class="sb-item">🔐 <strong>CCIE certified</strong></div>
-    <div class="sb-item">🛡️ <strong>Top Secret clearance</strong></div>
+    <div class="sb-item"><span class="stat-icon">▸</span> <strong>20+ years</strong> in cybersecurity</div>
+    <div class="sb-item"><span class="stat-icon">▸</span> <strong>7 published books</strong></div>
+    <div class="sb-item"><span class="stat-icon">▸</span> <strong>PhD in History</strong> (Goethe Univ.)</div>
+    <div class="sb-item"><span class="stat-icon">▸</span> <strong>CCIE certified</strong></div>
+    <div class="sb-item"><span class="stat-icon">▸</span> <strong>Top Secret clearance</strong></div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
@@ -1136,7 +1192,7 @@ with st.sidebar:
 
     # ── Conversational toggle ──
     st.session_state.personal_mode = st.toggle(
-        "💬 Conversational Mode",
+        "◆ Conversational Mode",
         value=st.session_state.personal_mode,
         help="Enable career narrative and contextual insights in responses.",
     )
@@ -1144,7 +1200,7 @@ with st.sidebar:
     st.markdown("---")
 
     # ── Featured Publications ──
-    with st.expander("📖 Featured Publications"):
+    with st.expander("▸ Featured Publications"):
         st.markdown("""
         **Recent Books:**
         - *The American Paranormal* (2025)
@@ -1158,7 +1214,7 @@ with st.sidebar:
         """)
 
     # ── About This Interface ──
-    with st.expander("ℹ️ About This Assistant"):
+    with st.expander("ⓘ About This Assistant"):
         st.markdown("""
         This AI assistant is powered by **retrieval-augmented generation (RAG)** 
         and is trained on Dr. Dietrich-Kolokouris's professional portfolio, 
@@ -1178,7 +1234,7 @@ with st.sidebar:
         )
         if pdf_bytes:
             st.download_button(
-                label="📄 Download Transcript (PDF)",
+                label="⬇ Download Transcript (PDF)",
                 data=pdf_bytes,
                 file_name="conversation_transcript.pdf",
                 mime="application/pdf",
@@ -1194,7 +1250,7 @@ with st.sidebar:
 st.markdown("""
 <div class="main-header">
     <div class="main-tagline">
-        <span>🔍</span> AI-POWERED PORTFOLIO ASSISTANT
+        <span class="tagline-icon">◆</span> AI-POWERED PORTFOLIO ASSISTANT
     </div>
     <div class="main-greeting">Discover how Stephen's expertise aligns with your needs</div>
     <div class="main-subtitle">
@@ -1209,22 +1265,43 @@ st.markdown("""
 st.markdown("""
 <div class="domain-grid">
     <div class="domain-card cyber">
-        <span class="domain-icon">🛡️</span>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </div>
         <div class="domain-label">Security Architecture</div>
         <div class="domain-desc">Designing resilient security frameworks through penetration testing, network audits, and CCIE-level infrastructure expertise. Specialized in incident response and critical infrastructure protection.</div>
     </div>
     <div class="domain-card rag">
-        <span class="domain-icon">🤖</span>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+                <path d="M16.24 7.76l-2.12 2.12M16.24 16.24l-2.12-2.12M7.76 16.24l2.12-2.12M7.76 7.76l2.12 2.12"/>
+            </svg>
+        </div>
         <div class="domain-label">AI & RAG Systems</div>
         <div class="domain-desc">Building production-grade retrieval pipelines with LangChain, FAISS, and ChromaDB. Expert in agentic frameworks, prompt engineering, and AI system architecture.</div>
     </div>
     <div class="domain-card intel">
-        <span class="domain-icon">🎯</span>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+            </svg>
+        </div>
         <div class="domain-label">Intelligence & Analysis</div>
         <div class="domain-desc">Delivering actionable intelligence through CIA contractor operations, supply chain vulnerability research, threat modeling, and data-driven defense strategies.</div>
     </div>
     <div class="domain-card research">
-        <span class="domain-icon">📚</span>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+        </div>
         <div class="domain-label">Research & Publishing</div>
         <div class="domain-desc">Published author with 7 books and PhD in History. Expertise in WarSim conflict simulation, consciousness research, and investigative analysis.</div>
     </div>
@@ -1232,14 +1309,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Chat Section ──
-st.markdown('<div class="chat-section-label">💬 Interactive Conversation</div>', unsafe_allow_html=True)
+st.markdown('<div class="chat-section-label">▸ Interactive Conversation</div>', unsafe_allow_html=True)
 
 # ── Action Buttons ──
 col_a, col_b = st.columns(2)
 with col_a:
-    do_fit = st.button("📊 Analyze Role Fit", use_container_width=True, help="Get a structured assessment of alignment with your requirements")
+    do_fit = st.button("⊕ Analyze Role Fit", use_container_width=True, help="Get a structured assessment of alignment with your requirements")
 with col_b:
-    do_outreach = st.button("✉️ Draft Outreach Message", use_container_width=True, help="Generate a personalized introduction based on our conversation")
+    do_outreach = st.button("✎ Draft Outreach Message", use_container_width=True, help="Generate a personalized introduction based on our conversation")
 
 # ── Handle Action Buttons ──
 if do_fit:
@@ -1264,7 +1341,7 @@ if do_outreach:
 # ── Pinned Opening ──
 if st.session_state.pinned_opening and not st.session_state.messages:
     pinned = (
-        "👋 Welcome! I'm here to help you explore Stephen's professional background. "
+        "▸ Welcome! I'm here to help you explore Stephen's professional background. "
         "Tell me about the role or project you're working on, and I'll provide specific, "
         "source-backed insights on how his experience aligns with your needs."
     )
@@ -1280,10 +1357,10 @@ user_has_spoken = any(m.get("role") == "user" for m in st.session_state.messages
 if not user_has_spoken:
     chip_cols = st.columns(4)
     chip_labels = [
-        "🛡️ Security Architecture Projects",
-        "🤖 AI & RAG Portfolio",
-        "🎯 Intelligence Background",
-        "📚 Publications & Research",
+        "Security Architecture",
+        "AI & RAG Portfolio",
+        "Intelligence Background",
+        "Publications & Research",
     ]
     chip_clicked = None
     for i, label in enumerate(chip_labels):
@@ -1292,13 +1369,11 @@ if not user_has_spoken:
                 chip_clicked = label
     
     if chip_clicked:
-        # Strip emoji for cleaner message
-        clean_label = chip_clicked.split(maxsplit=1)[1] if ' ' in chip_clicked else chip_clicked
-        st.session_state.messages.append({"role": "user", "content": clean_label})
+        st.session_state.messages.append({"role": "user", "content": chip_clicked})
         with st.chat_message("user"):
-            st.markdown(clean_label)
+            st.markdown(chip_clicked)
         with st.chat_message("assistant"):
-            answer = run_turn(clean_label, action_mode="chat")
+            answer = run_turn(chip_clicked, action_mode="chat")
             st.markdown(answer, unsafe_allow_html=True)
             st.session_state.messages.append({"role": "assistant", "content": answer})
         st.rerun()
