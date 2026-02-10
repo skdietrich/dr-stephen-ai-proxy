@@ -98,7 +98,7 @@ if "did_scroll_top" not in st.session_state:
         """,
         height=0,
     )
-Why this works (and your earlier attempt didn’t
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # GUARDRAILS
 # ═══════════════════════════════════════════════════════════════════════════════
