@@ -1,50 +1,44 @@
-# 🛡️ Dr. Stephen Dietrich-Kolokouris Research Proxy
-### *Operationalizing Research Through AI-Driven Capability Demonstrations*
+# Dr. Stephen Dietrich-Kolokouris — AI Portfolio Assistant
 
-This repository houses an interactive **AI Chief of Staff** and **Methodology Engine**. It is designed to bridge the gap between high-level academic research (Cybersecurity, Intelligence, and Historical Analysis) and practical, real-world application.
+An AI-powered assistant that answers recruiter and hiring manager questions about my professional background. Every response is grounded in verified source documentation.
 
-## 🎯 The Paradigm Shift
-In an era of LLM-generated resumes, this project serves as a **Live Proof of Capability**. It allows hiring managers and technical leads to:
-1.  **Interview my research:** Interact with a RAG-based AI trained on my 7 published books and DHS research papers.
-2.  **Test my frameworks:** Use live tools that operationalize my findings on supply chain vulnerabilities and threat modeling.
-3.  **Validate Methodology:** See how I translate complex historical network analysis into modern cybersecurity anomaly detection.
+
 
 ---
 
-## 🛠️ Integrated Capabilities
+## What This Does
 
-### 1. The RAG "Knowledge Vault"
-A Retrieval-Augmented Generation (RAG) interface that serves as a proxy for my professional expertise. 
-* **Corpus:** 7 Books, DHS research on Chinese Sleeper Malware, and sanitized Intelligence Analysis frameworks.
-* **Safety Logic:** Programmed to protect sensitive operational history while demonstrating the underlying analytical rigor.
+Describe the role you're hiring for. The assistant maps my experience to your requirements using a curated portfolio of credentials, project documentation, and published research.
 
-### 2. Supply Chain Risk Calculator
-A live tool based on my specific DHS research findings. It calculates risk vectors for software and hardware vendors based on geopolitical data, component origin, and network criticality.
+No hallucination. No guesswork. Evidence-backed answers only.
 
-### 3. Influence Network Mapping
-A demonstration of my historical research methodology (e.g., *Behind the Mask: Hitler the Socialite*) applied to modern data science. It shows how I identify hidden nodes and "sleeper" influencers in complex datasets.
-
----
-
-## 💻 Technical Stack
-* **Language:** Python 3.11+
-* **Interface:** Streamlit (Cloud Deployment)
-* **Orchestration:** LangChain (RAG Framework)
-* **Vector Store:** FAISS (Facebook AI Similarity Search)
-* **Intelligence:** GPT-4 (via OpenAI API)
+**Features:**
+- Streaming AI responses cited from real documentation
+- Automatic role-matching across security, AI/ML, intelligence, and research domains
+- Fit summary and outreach message generation
+- PDF transcript export
 
 ---
 
-## 🚀 How to Interact
-1.  **Visit the Live App:** [(https://skdietrich.streamlit.app/)]
-2.  **Input your specific problem:** Ask the AI, *"How would Dr. Stephen analyze a supply chain threat from a Tier 2 vendor?"*
-3.  **Review the Code:** Explore `app.py` to see how I build systems that integrate data-driven research with large language models.
+## Domain Coverage
+
+| Domain | Highlights |
+|--------|-----------|
+| Security Architecture | CCIE, penetration testing, incident response, supply chain risk, critical infrastructure |
+| AI & RAG Systems | Production retrieval pipelines, LLM applications, agent frameworks |
+| Clearance & Compliance | Former CIA contractor, federal compliance frameworks |
+| Publications & Research | 7 published books, PhD (Goethe University Frankfurt), DoD research submissions |
 
 ---
 
-## 📝 Contact & Verification
-* **Author:** Dr. Stephen Dietrich-Kolokouris 
-* **Focus:** Cybersecurity Research | Intelligence Analysis | Historical Methodology
-* **Credential Verification:** [(https://www.linkedin.com/in/stephendietrich-kolokouris/)]
+## For Recruiters
+
+Visit the live app and start asking questions. Starter buttons are provided for common queries. No account or setup required.
+
 ---
-*Developed as a demonstration of technical synthesis and strategic thinking.*
+
+
+## Contact
+
+**Dr. Stephen Dietrich-Kolokouris**
+[LinkedIn](https://www.linkedin.com/in/stephendietrich-kolokouris/) · [Portfolio Assistant](https://skdietrich.streamlit.app)
