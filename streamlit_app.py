@@ -52,13 +52,23 @@ logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE CONFIG
+# PAGE CONFIG & UTILITIES
 # ═══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris | Cybersecurity & AI Expert",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded",
+)
+
+# Force scroll to top on every load
+components.html(
+    """
+    <script>
+        window.parent.document.querySelector('.main').scrollTo(0,0);
+    </script>
+    """,
+    height=0,
 )
 
 
