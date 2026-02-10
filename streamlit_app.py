@@ -1,5 +1,5 @@
 # Dr. Stephen Dietrich-Kolokouris -- Portfolio RAG Interface
-# Complete production build: premium UI + full backend.
+# Enhanced production build: premium UI + full backend + professional improvements.
 #
 # Self-healing: if a phone editor corrupted quotes, fix and restart.
 import sys as _sys, os as _os, pathlib as _pl
@@ -55,10 +55,10 @@ logger = logging.getLogger(__name__)
 # PAGE CONFIG
 # ═══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Dr. Stephen Dietrich-Kolokouris",
-    page_icon="◆",
+    page_title="Dr. Stephen Dietrich-Kolokouris | Cybersecurity & AI Expert",
+    page_icon="🔐",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 
@@ -608,7 +608,7 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
         for chunk in stream:
             token = chunk.content or ""
             chunks.append(token)
-            placeholder.markdown("".join(chunks) + " |", unsafe_allow_html=True)
+            placeholder.markdown("".join(chunks) + " ▋", unsafe_allow_html=True)
         answer = "".join(chunks).strip()
         placeholder.empty()
     except Exception as e:
@@ -618,11 +618,11 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
 
     # LinkedIn CTA
     answer += (
-        '\n\n<div style="margin-top:1.2rem;padding-top:0.8rem;'
-        'border-top:1px solid #e2e0db;font-size:0.82rem;color:#5a5f6b;">'
-        'Interested? <a href="' + LINKEDIN_URL + '" target="_blank" '
-        'style="color:#1a5c3a;font-weight:500;text-decoration:none;">'
-        'Connect on LinkedIn &rarr;</a></div>'
+        '\n\n<div style="margin-top:1.5rem;padding-top:1rem;'
+        'border-top:1px solid #e2e0db;font-size:0.88rem;color:#5a5f6b;">'
+        '💼 Want to discuss further? <a href="' + LINKEDIN_URL + '" target="_blank" '
+        'style="color:#1a5c3a;font-weight:600;text-decoration:none;">'
+        'Connect on LinkedIn →</a></div>'
     )
 
     return answer
@@ -644,7 +644,7 @@ if "qa_evidence_files" not in st.session_state:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PREMIUM CSS
+# ENHANCED PREMIUM CSS
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
@@ -666,6 +666,7 @@ st.markdown("""
     --gold: #c9a84c;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
     --radius: 12px;
     --radius-sm: 8px;
     --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -678,23 +679,23 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 .stApp { background-color: var(--surface) !important; }
 
-/* ── Sidebar ── */
+/* ── Sidebar Enhanced ── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0d0f12 0%, #141820 100%) !important;
-    border-right: 1px solid rgba(255,255,255,0.06) !important;
+    background: linear-gradient(180deg, #0d0f12 0%, #1a1f2e 100%) !important;
+    border-right: 1px solid rgba(255,255,255,0.08) !important;
 }
 
 /* Desktop: sidebar always visible, locked open */
 @media (min-width: 769px) {
     [data-testid="stSidebar"] {
-        min-width: 300px !important;
-        width: 300px !important;
+        min-width: 320px !important;
+        width: 320px !important;
         transform: none !important;
         position: relative !important;
     }
     [data-testid="stSidebar"][aria-expanded="false"] {
-        min-width: 300px !important;
-        width: 300px !important;
+        min-width: 320px !important;
+        width: 320px !important;
         transform: none !important;
         margin-left: 0 !important;
     }
@@ -706,14 +707,15 @@ html, body, [data-testid="stAppViewContainer"] {
 /* Mobile: sidebar starts collapsed, can be toggled */
 @media (max-width: 768px) {
     [data-testid="stSidebar"] {
-        min-width: 260px !important;
-        width: 80vw !important;
-        max-width: 300px !important;
+        min-width: 280px !important;
+        width: 85vw !important;
+        max-width: 320px !important;
     }
     [data-testid="collapsedControl"] {
         display: block !important;
     }
 }
+
 [data-testid="stSidebar"] * { color: #c8cad0 !important; }
 [data-testid="stSidebar"] .stMarkdown h1,
 [data-testid="stSidebar"] .stMarkdown h2,
@@ -722,194 +724,337 @@ html, body, [data-testid="stAppViewContainer"] {
     font-family: 'DM Serif Display', Georgia, serif !important;
 }
 [data-testid="stSidebar"] hr {
-    border-color: rgba(255,255,255,0.08) !important;
-    margin: 1.2rem 0 !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    margin: 1.5rem 0 !important;
 }
 
 .sidebar-photo {
-    width: 140px; height: 140px; border-radius: 50%;
-    margin: 2rem auto 1rem; display: block;
-    border: 3px solid rgba(74,222,128,0.3);
-    box-shadow: 0 0 24px rgba(74,222,128,0.1);
+    width: 150px; height: 150px; border-radius: 50%;
+    margin: 2.5rem auto 1.2rem; display: block;
+    border: 4px solid rgba(74,222,128,0.35);
+    box-shadow: 0 0 30px rgba(74,222,128,0.15), 0 4px 16px rgba(0,0,0,0.3);
     object-fit: cover;
+    transition: var(--transition);
+}
+
+.sidebar-photo:hover {
+    box-shadow: 0 0 40px rgba(74,222,128,0.25), 0 6px 24px rgba(0,0,0,0.4);
+    transform: scale(1.02);
 }
 
 .sidebar-photo-placeholder {
-    width: 140px; height: 140px; border-radius: 50%;
-    margin: 2rem auto 1rem;
+    width: 150px; height: 150px; border-radius: 50%;
+    margin: 2.5rem auto 1.2rem;
     display: flex; align-items: center; justify-content: center;
-    border: 3px solid rgba(74,222,128,0.3);
-    box-shadow: 0 0 24px rgba(74,222,128,0.1);
-    background: linear-gradient(135deg, #1a2332, #0d1520);
-    font-size: 2.4rem; font-family: 'DM Serif Display', serif;
-    color: #4ade80; letter-spacing: -1px;
+    border: 4px solid rgba(74,222,128,0.35);
+    box-shadow: 0 0 30px rgba(74,222,128,0.15), 0 4px 16px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #1a2840, #0d1520);
+    font-size: 3rem; font-family: 'DM Serif Display', serif;
+    color: #4ade80; letter-spacing: -2px;
+    transition: var(--transition);
+}
+
+.sidebar-photo-placeholder:hover {
+    box-shadow: 0 0 40px rgba(74,222,128,0.25), 0 6px 24px rgba(0,0,0,0.4);
+    transform: scale(1.02);
 }
 
 .sidebar-name {
     text-align: center;
     font-family: 'DM Serif Display', Georgia, serif !important;
-    font-size: 1.35rem; color: #ffffff !important;
-    margin-bottom: 0.15rem; letter-spacing: -0.3px;
+    font-size: 1.5rem; color: #ffffff !important;
+    margin-bottom: 0.2rem; letter-spacing: -0.4px;
+    font-weight: 400;
 }
 
 .sidebar-title-line {
-    text-align: center; font-size: 0.78rem;
-    color: #8b909e !important; letter-spacing: 0.5px;
-    text-transform: uppercase; margin-bottom: 1.5rem;
+    text-align: center; font-size: 0.82rem;
+    color: #9ca3af !important; letter-spacing: 0.6px;
+    text-transform: uppercase; margin-bottom: 1.8rem;
+    font-weight: 500;
 }
 
 .cred-row {
-    display: flex; flex-wrap: wrap; gap: 6px;
-    justify-content: center; margin-bottom: 1.2rem; padding: 0 0.5rem;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; margin-bottom: 1.5rem; padding: 0 0.8rem;
 }
 .cred-tag {
-    display: inline-block; padding: 3px 10px; border-radius: 100px;
-    font-size: 0.68rem; font-weight: 500; letter-spacing: 0.4px;
+    display: inline-block; padding: 5px 12px; border-radius: 100px;
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px;
     font-family: 'JetBrains Mono', monospace;
+    transition: var(--transition);
 }
-.cred-tag.green { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
-.cred-tag.gold  { background: rgba(201,168,76,0.12); color: #c9a84c; border: 1px solid rgba(201,168,76,0.2); }
-.cred-tag.blue  { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+.cred-tag:hover {
+    transform: translateY(-1px);
+}
+.cred-tag.green { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+.cred-tag.gold  { background: rgba(201,168,76,0.15); color: #e5c468; border: 1px solid rgba(201,168,76,0.3); }
+.cred-tag.blue  { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
 
 .sb-section-title {
-    font-size: 0.7rem !important; font-weight: 500 !important;
-    letter-spacing: 1.2px !important; text-transform: uppercase !important;
-    color: #5a5f6b !important; margin-bottom: 0.6rem !important; padding-left: 2px;
+    font-size: 0.72rem !important; font-weight: 600 !important;
+    letter-spacing: 1.4px !important; text-transform: uppercase !important;
+    color: #6b7280 !important; margin-bottom: 0.8rem !important; padding-left: 3px;
 }
-.sb-item { font-size: 0.85rem; color: #c8cad0; padding: 5px 0; line-height: 1.5; }
-.sb-item strong { color: #e2e4e8 !important; }
+.sb-item { 
+    font-size: 0.88rem; color: #d1d5db; padding: 6px 0; line-height: 1.6;
+    transition: color 0.2s ease;
+}
+.sb-item:hover { color: #e5e7eb; }
+.sb-item strong { color: #f3f4f6 !important; font-weight: 600; }
 
 .sb-link {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 16px; border-radius: 8px;
-    background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.15);
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 10px;
+    background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2);
     color: #4ade80 !important; text-decoration: none !important;
-    font-size: 0.82rem; font-weight: 500; transition: var(--transition); margin: 3px 0;
+    font-size: 0.88rem; font-weight: 600; transition: var(--transition);
+    margin: 5px 0;
 }
-.sb-link:hover { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.3); }
+.sb-link:hover { 
+    background: rgba(74,222,128,0.18); 
+    border-color: rgba(74,222,128,0.4);
+    transform: translateX(3px);
+}
 
-/* ── Main ── */
-.main-header { max-width: 960px; margin: 0 auto; padding: 2.5rem 0 1rem; }
+/* ── Main Content Enhanced ── */
+.main-header { 
+    max-width: 1000px; margin: 0 auto; padding: 3rem 1rem 1.5rem;
+    animation: fadeUp 0.6s ease-out;
+}
+
+.main-tagline {
+    font-size: 0.85rem; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem;
+    display: flex; align-items: center; gap: 8px;
+}
+
 .main-greeting {
     font-family: 'DM Serif Display', Georgia, serif;
-    font-size: 2.2rem; color: var(--text-primary);
-    letter-spacing: -0.8px; line-height: 1.15; margin-bottom: 0.3rem;
+    font-size: 2.6rem; color: var(--text-primary);
+    letter-spacing: -1px; line-height: 1.15; margin-bottom: 0.5rem;
+    font-weight: 400;
 }
+
 .main-subtitle {
-    font-size: 1.05rem; color: var(--text-secondary);
-    line-height: 1.6; max-width: 640px; margin-bottom: 2rem;
+    font-size: 1.1rem; color: var(--text-secondary);
+    line-height: 1.65; max-width: 700px; margin-bottom: 2.5rem;
 }
 
 .domain-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px; margin-bottom: 2.5rem; max-width: 960px; margin-left: auto; margin-right: auto;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px; margin-bottom: 3rem; max-width: 1000px; 
+    margin-left: auto; margin-right: auto;
+    animation: fadeUp 0.6s ease-out 0.15s both;
 }
+
 .domain-card {
     background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 1.25rem 1.3rem;
+    border-radius: var(--radius); padding: 1.5rem 1.5rem;
     transition: var(--transition); position: relative; overflow: hidden;
+    cursor: default;
 }
+
 .domain-card:hover {
-    border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-2px);
+    border-color: var(--accent); 
+    box-shadow: var(--shadow-lg); 
+    transform: translateY(-3px);
 }
+
 .domain-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
     border-radius: var(--radius) var(--radius) 0 0;
+    transition: height 0.3s ease;
 }
+
+.domain-card:hover::before {
+    height: 6px;
+}
+
 .domain-card.cyber::before    { background: linear-gradient(90deg, #1a5c3a, #2d8a5e); }
 .domain-card.rag::before      { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-.domain-card.intel::before    { background: linear-gradient(90deg, #c9a84c, #dbbf6a); }
+.domain-card.intel::before    { background: linear-gradient(90deg, #c9a84c, #e5c468); }
 .domain-card.research::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 
-.domain-icon { font-size: 1.5rem; margin-bottom: 0.6rem; display: block; }
-.domain-label { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem; }
-.domain-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
+.domain-icon { 
+    font-size: 1.8rem; margin-bottom: 0.8rem; display: block;
+    transition: transform 0.3s ease;
+}
+
+.domain-card:hover .domain-icon {
+    transform: scale(1.1);
+}
+
+.domain-label { 
+    font-size: 1rem; font-weight: 700; color: var(--text-primary); 
+    margin-bottom: 0.4rem; letter-spacing: -0.2px;
+}
+
+.domain-desc { 
+    font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;
+}
 
 .chat-section-label {
-    font-size: 0.7rem; font-weight: 500; letter-spacing: 1.2px;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 1.4px;
     text-transform: uppercase; color: var(--text-muted);
-    margin-bottom: 0.8rem; padding-left: 2px;
-    max-width: 960px; margin-left: auto; margin-right: auto;
+    margin-bottom: 1rem; padding-left: 3px;
+    max-width: 1000px; margin-left: auto; margin-right: auto;
 }
 
-/* ── Chat Messages ── */
-[data-testid="stChatMessage"] {
-    max-width: 960px !important; margin-left: auto !important; margin-right: auto !important;
-    border: none !important; background: transparent !important; padding: 0.8rem 0 !important;
+/* ── Action Buttons Enhanced ── */
+.action-buttons-row {
+    display: flex; gap: 12px; margin-bottom: 1.5rem;
+    max-width: 1000px; margin-left: auto; margin-right: auto;
 }
+
+/* ── Chat Messages Enhanced ── */
+[data-testid="stChatMessage"] {
+    max-width: 1000px !important; margin-left: auto !important; margin-right: auto !important;
+    border: none !important; background: transparent !important; padding: 1rem 0 !important;
+}
+
 [data-testid="stChatMessage"] p {
     font-family: 'DM Sans', sans-serif !important;
-    font-size: 0.95rem !important; line-height: 1.7 !important;
+    font-size: 0.98rem !important; line-height: 1.75 !important;
     color: var(--text-primary) !important;
 }
 
-/* ── Chat Input ── */
+/* ── Chat Input Enhanced ── */
 [data-testid="stChatInput"] {
-    max-width: 960px !important; margin-left: auto !important; margin-right: auto !important;
+    max-width: 1000px !important; margin-left: auto !important; margin-right: auto !important;
 }
+
 [data-testid="stChatInput"] textarea {
-    font-family: 'DM Sans', sans-serif !important; font-size: 0.95rem !important;
-    border-radius: var(--radius) !important; border: 1px solid var(--border) !important;
-    background: var(--card-bg) !important; padding: 1rem 1.2rem !important;
-    color: var(--text-primary) !important; caret-color: var(--text-primary) !important;
+    font-family: 'DM Sans', sans-serif !important; font-size: 0.98rem !important;
+    border-radius: var(--radius) !important; border: 2px solid var(--border) !important;
+    background: var(--card-bg) !important; padding: 1.1rem 1.3rem !important;
+    color: var(--text-primary) !important; caret-color: var(--accent) !important;
     -webkit-text-fill-color: var(--text-primary) !important;
     transition: var(--transition);
+    box-shadow: var(--shadow-sm);
 }
+
 [data-testid="stChatInput"] textarea::placeholder {
     color: var(--text-muted) !important;
     -webkit-text-fill-color: var(--text-muted) !important;
 }
+
 [data-testid="stChatInput"] textarea:focus {
-    border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--accent-light) !important;
+    border-color: var(--accent) !important; 
+    box-shadow: 0 0 0 4px var(--accent-light), var(--shadow-md) !important;
+    outline: none !important;
 }
+
 [data-testid="stChatInput"] button {
     color: var(--accent) !important;
+    transition: var(--transition);
 }
+
+[data-testid="stChatInput"] button:hover {
+    transform: scale(1.1);
+}
+
 [data-testid="stChatInput"] button svg {
     fill: var(--accent) !important; stroke: var(--accent) !important;
 }
 
-/* ── Buttons ── */
+/* ── Buttons Enhanced ── */
 .stButton > button {
-    font-family: 'DM Sans', sans-serif !important; font-size: 0.82rem !important;
-    font-weight: 500 !important; border-radius: var(--radius-sm) !important;
-    border: 1px solid var(--border) !important; background: var(--card-bg) !important;
-    color: var(--text-secondary) !important; padding: 0.5rem 1rem !important;
+    font-family: 'DM Sans', sans-serif !important; font-size: 0.88rem !important;
+    font-weight: 600 !important; border-radius: var(--radius-sm) !important;
+    border: 2px solid var(--border) !important; background: var(--card-bg) !important;
+    color: var(--text-secondary) !important; padding: 0.65rem 1.2rem !important;
     transition: var(--transition);
+    box-shadow: var(--shadow-sm);
 }
+
 .stButton > button:hover {
     border-color: var(--accent) !important; color: var(--accent) !important;
     background: var(--accent-light) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .stDownloadButton > button {
-    font-family: 'DM Sans', sans-serif !important; font-size: 0.82rem !important;
+    font-family: 'DM Sans', sans-serif !important; font-size: 0.85rem !important;
     border-radius: var(--radius-sm) !important;
-    border: 1px solid var(--border) !important; background: var(--card-bg) !important;
+    border: 2px solid var(--border) !important; background: var(--card-bg) !important;
     color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    transition: var(--transition);
 }
 
-/* ── Expanders ── */
+.stDownloadButton > button:hover {
+    border-color: var(--accent) !important;
+    background: var(--accent-light) !important;
+    color: var(--accent) !important;
+}
+
+/* ── Toggle Switch Enhanced ── */
+[data-testid="stSidebar"] .stCheckbox {
+    padding: 0.5rem 0;
+}
+
+/* ── Expanders Enhanced ── */
 [data-testid="stExpander"] {
-    border: 1px solid rgba(255,255,255,0.06) !important;
-    border-radius: 8px !important; background: rgba(255,255,255,0.02) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 10px !important; 
+    background: rgba(255,255,255,0.03) !important;
+    transition: var(--transition);
+}
+
+[data-testid="stExpander"]:hover {
+    background: rgba(255,255,255,0.05) !important;
+    border-color: rgba(255,255,255,0.12) !important;
 }
 
 /* ── Hide chrome ── */
 #MainMenu, footer { visibility: hidden; }
 [data-testid="stToolbar"] { display: none; }
 
-/* ── Animation ── */
+/* ── Starter Chips Enhanced ── */
+.chip-row { 
+    display: flex; flex-wrap: wrap; gap: 10px; 
+    margin: 0.8rem auto 2rem; max-width: 1000px;
+}
+
+.chip-btn { 
+    background: #fff; border: 2px solid #e2e0db; border-radius: 100px;
+    padding: 10px 20px; font-size: 0.88rem; color: #1a1d23; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: var(--transition);
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+}
+
+.chip-btn:hover { 
+    border-color: #1a5c3a; color: #1a5c3a; background: #e8f0ec;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ── Animations ── */
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-.main-header  { animation: fadeUp 0.6s ease-out; }
-.domain-grid  { animation: fadeUp 0.6s ease-out 0.15s both; }
 
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ── Mobile Responsiveness ── */
 @media (max-width: 768px) {
-    .domain-grid { grid-template-columns: 1fr 1fr; }
-    .main-greeting { font-size: 1.6rem; }
+    .domain-grid { grid-template-columns: 1fr; gap: 12px; }
+    .main-greeting { font-size: 2rem; }
+    .main-subtitle { font-size: 1rem; }
+    .main-header { padding: 2rem 1rem 1rem; }
+    .chip-row { flex-direction: column; }
+    .chip-btn { text-align: center; }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .domain-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -936,7 +1081,7 @@ with st.sidebar:
         st.markdown('<div class="sidebar-photo-placeholder">SDK</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="sidebar-name">Dr. Stephen Dietrich-Kolokouris</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-title-line">Cybersecurity · AI/RAG · Intelligence</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-title-line">Cybersecurity Architect · AI/RAG Engineer · Intelligence Analyst</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="cred-row">
@@ -952,60 +1097,90 @@ with st.sidebar:
     # ── Connect ──
     st.markdown('<div class="sb-section-title">Connect</div>', unsafe_allow_html=True)
     st.markdown(f"""
-    <a href="{LINKEDIN_URL}" target="_blank" class="sb-link">↗ LinkedIn</a>
+    <a href="{LINKEDIN_URL}" target="_blank" class="sb-link">
+        <span>🔗</span> LinkedIn Profile
+    </a>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # ── At a Glance ──
-    st.markdown('<div class="sb-section-title">At a Glance</div>', unsafe_allow_html=True)
+    # ── Quick Stats ──
+    st.markdown('<div class="sb-section-title">Quick Stats</div>', unsafe_allow_html=True)
     st.markdown("""
-    <div class="sb-item"><strong>Security Architecture</strong> -- Pen testing, IR, supply chain risk analysis for critical infrastructure</div>
-    <div class="sb-item"><strong>AI / RAG Systems</strong> -- Production retrieval-augmented generation pipelines, LangChain, vector DBs</div>
-    <div class="sb-item"><strong>Intelligence</strong> -- Former CIA contractor supporting CT operations (Al-Qaeda, ISIS theaters)</div>
-    <div class="sb-item"><strong>Research & Publishing</strong> -- 7 books, PhD (Goethe Univ. Frankfurt), WarSim Algorithm (DoD-submitted)</div>
+    <div class="sb-item">📊 <strong>20+ years</strong> in cybersecurity</div>
+    <div class="sb-item">📚 <strong>7 published books</strong></div>
+    <div class="sb-item">🎓 <strong>PhD in History</strong> (Goethe Univ.)</div>
+    <div class="sb-item">🔐 <strong>CCIE certified</strong></div>
+    <div class="sb-item">🛡️ <strong>Top Secret clearance</strong></div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── Core Expertise ──
+    st.markdown('<div class="sb-section-title">Core Expertise</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="sb-item"><strong>Security Architecture</strong><br/>
+    Penetration testing, incident response, supply chain risk for critical infrastructure</div>
+    
+    <div class="sb-item"><strong>AI / RAG Systems</strong><br/>
+    Production retrieval pipelines, LangChain, FAISS, vector databases, agent frameworks</div>
+    
+    <div class="sb-item"><strong>Intelligence Analysis</strong><br/>
+    Former CIA contractor, counterterrorism operations (Al-Qaeda, ISIS theaters)</div>
+    
+    <div class="sb-item"><strong>Research & Publishing</strong><br/>
+    7 books, WarSim Algorithm (DoD-submitted), consciousness research</div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
 
     # ── Conversational toggle ──
     st.session_state.personal_mode = st.toggle(
-        "Conversational style",
+        "💬 Conversational Mode",
         value=st.session_state.personal_mode,
-        help="Adds career narrative and context to answers.",
+        help="Enable career narrative and contextual insights in responses.",
     )
 
     st.markdown("---")
 
-    # ── Publications ──
-    with st.expander("Selected Publications"):
+    # ── Featured Publications ──
+    with st.expander("📖 Featured Publications"):
         st.markdown("""
-        - *The American Paranormal*
+        **Recent Books:**
+        - *The American Paranormal* (2025)
         - *Chicago Ripper Crew: Reboot*
         - *Behind the Mask: Hitler the Socialite*
+        
+        **Research Papers:**
+        - *Silent Weapons: Sleeper Malware*
         - *WarSim Algorithm* (DoD submission)
+        - *AI Chatbots as National Security Risks*
         """)
 
-    # ── About ──
-    with st.expander("About This Interface"):
+    # ── About This Interface ──
+    with st.expander("ℹ️ About This Assistant"):
         st.markdown("""
-        A retrieval-augmented AI assistant trained on Dr. Dietrich-Kolokouris's
-        professional portfolio, publications, and project documentation. Every response
-        is grounded in source material.
+        This AI assistant is powered by **retrieval-augmented generation (RAG)** 
+        and is trained on Dr. Dietrich-Kolokouris's professional portfolio, 
+        publications, and project documentation.
+        
+        Every response is **grounded in source material** — no hallucinations, 
+        just verified expertise.
         """)
 
     # ── PDF Export ──
     if REPORTLAB_OK and st.session_state.messages:
         st.markdown("---")
+        st.markdown('<div class="sb-section-title">Export</div>', unsafe_allow_html=True)
         pdf_bytes = build_qa_pdf_bytes(
             st.session_state.messages,
             st.session_state.get("qa_evidence_files", []),
         )
         if pdf_bytes:
             st.download_button(
-                label="Export transcript (PDF)",
+                label="📄 Download Transcript (PDF)",
                 data=pdf_bytes,
-                file_name="qa_transcript.pdf",
+                file_name="conversation_transcript.pdf",
                 mime="application/pdf",
                 use_container_width=True,
             )
@@ -1018,10 +1193,14 @@ with st.sidebar:
 # ── Header ──
 st.markdown("""
 <div class="main-header">
-    <div class="main-greeting">Ask me anything about Stephen's experience.</div>
+    <div class="main-tagline">
+        <span>🔍</span> AI-POWERED PORTFOLIO ASSISTANT
+    </div>
+    <div class="main-greeting">Discover how Stephen's expertise aligns with your needs</div>
     <div class="main-subtitle">
-        This assistant draws from a curated portfolio of project documentation, certifications,
-        and published research. Describe the role you're filling, and I'll map relevant experience.
+        This intelligent assistant provides instant access to verified project experience, 
+        certifications, and research. Describe your role requirements, and I'll map 
+        relevant qualifications with source-backed precision.
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1030,43 +1209,43 @@ st.markdown("""
 st.markdown("""
 <div class="domain-grid">
     <div class="domain-card cyber">
-        <span class="domain-icon">🛡</span>
+        <span class="domain-icon">🛡️</span>
         <div class="domain-label">Security Architecture</div>
-        <div class="domain-desc">Pen testing, network audits, CCIE-level infrastructure, incident response, critical infrastructure protection</div>
+        <div class="domain-desc">Designing resilient security frameworks through penetration testing, network audits, and CCIE-level infrastructure expertise. Specialized in incident response and critical infrastructure protection.</div>
     </div>
     <div class="domain-card rag">
-        <span class="domain-icon">⚙</span>
+        <span class="domain-icon">🤖</span>
         <div class="domain-label">AI & RAG Systems</div>
-        <div class="domain-desc">Production retrieval pipelines, LangChain, FAISS/ChromaDB, agent frameworks, prompt engineering</div>
+        <div class="domain-desc">Building production-grade retrieval pipelines with LangChain, FAISS, and ChromaDB. Expert in agentic frameworks, prompt engineering, and AI system architecture.</div>
     </div>
     <div class="domain-card intel">
-        <span class="domain-icon">◈</span>
+        <span class="domain-icon">🎯</span>
         <div class="domain-label">Intelligence & Analysis</div>
-        <div class="domain-desc">CIA contractor operations, supply chain vulnerability research, threat modeling, data-driven defense</div>
+        <div class="domain-desc">Delivering actionable intelligence through CIA contractor operations, supply chain vulnerability research, threat modeling, and data-driven defense strategies.</div>
     </div>
     <div class="domain-card research">
-        <span class="domain-icon">✦</span>
+        <span class="domain-icon">📚</span>
         <div class="domain-label">Research & Publishing</div>
-        <div class="domain-desc">7 books, PhD in History, WarSim conflict simulation, consciousness research, investigative writing</div>
+        <div class="domain-desc">Published author with 7 books and PhD in History. Expertise in WarSim conflict simulation, consciousness research, and investigative analysis.</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ── Chat Section ──
-st.markdown('<div class="chat-section-label">Conversation</div>', unsafe_allow_html=True)
+st.markdown('<div class="chat-section-label">💬 Interactive Conversation</div>', unsafe_allow_html=True)
 
 # ── Action Buttons ──
 col_a, col_b = st.columns(2)
 with col_a:
-    do_fit = st.button("Summarize fit", use_container_width=True)
+    do_fit = st.button("📊 Analyze Role Fit", use_container_width=True, help="Get a structured assessment of alignment with your requirements")
 with col_b:
-    do_outreach = st.button("Draft message", use_container_width=True)
+    do_outreach = st.button("✉️ Draft Outreach Message", use_container_width=True, help="Generate a personalized introduction based on our conversation")
 
 # ── Handle Action Buttons ──
 if do_fit:
     with st.chat_message("assistant"):
         answer = run_turn(
-            "Summarize fit for the role and constraints discussed so far.",
+            "Provide a comprehensive fit analysis for the role and requirements we've discussed.",
             action_mode="fit",
         )
         st.markdown(answer, unsafe_allow_html=True)
@@ -1075,7 +1254,7 @@ if do_fit:
 if do_outreach:
     with st.chat_message("assistant"):
         answer = run_turn(
-            "Draft an outreach message based on what we've discussed.",
+            "Draft a professional outreach message highlighting relevant experience based on our discussion.",
             action_mode="outreach",
         )
         st.markdown(answer, unsafe_allow_html=True)
@@ -1085,8 +1264,9 @@ if do_outreach:
 # ── Pinned Opening ──
 if st.session_state.pinned_opening and not st.session_state.messages:
     pinned = (
-        "Good to meet you. Tell me about the role you're looking to fill -- "
-        "I'll walk you through how Stephen's experience lines up, with specifics."
+        "👋 Welcome! I'm here to help you explore Stephen's professional background. "
+        "Tell me about the role or project you're working on, and I'll provide specific, "
+        "source-backed insights on how his experience aligns with your needs."
     )
     st.session_state.messages.append({"role": "assistant", "content": pinned})
 
@@ -1098,39 +1278,33 @@ for m in st.session_state.messages:
 # ── Starter Chips (only show before first user message) ──
 user_has_spoken = any(m.get("role") == "user" for m in st.session_state.messages)
 if not user_has_spoken:
-    st.markdown("""
-    <style>
-    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0 1.5rem; max-width: 960px; }
-    .chip-btn { background: #fff; border: 1px solid #e2e0db; border-radius: 100px;
-        padding: 8px 18px; font-size: 0.85rem; color: #1a1d23; cursor: pointer;
-        font-family: 'DM Sans', sans-serif; transition: 0.2s ease; }
-    .chip-btn:hover { border-color: #1a5c3a; color: #1a5c3a; background: #e8f0ec; }
-    </style>
-    """, unsafe_allow_html=True)
     chip_cols = st.columns(4)
     chip_labels = [
-        "Security Architect experience",
-        "AI & RAG portfolio",
-        "Clearance & compliance",
-        "Publications & research",
+        "🛡️ Security Architecture Projects",
+        "🤖 AI & RAG Portfolio",
+        "🎯 Intelligence Background",
+        "📚 Publications & Research",
     ]
     chip_clicked = None
     for i, label in enumerate(chip_labels):
         with chip_cols[i]:
             if st.button(label, key=f"chip_{i}", use_container_width=True):
                 chip_clicked = label
+    
     if chip_clicked:
-        st.session_state.messages.append({"role": "user", "content": chip_clicked})
+        # Strip emoji for cleaner message
+        clean_label = chip_clicked.split(maxsplit=1)[1] if ' ' in chip_clicked else chip_clicked
+        st.session_state.messages.append({"role": "user", "content": clean_label})
         with st.chat_message("user"):
-            st.markdown(chip_clicked)
+            st.markdown(clean_label)
         with st.chat_message("assistant"):
-            answer = run_turn(chip_clicked, action_mode="chat")
+            answer = run_turn(clean_label, action_mode="chat")
             st.markdown(answer, unsafe_allow_html=True)
             st.session_state.messages.append({"role": "assistant", "content": answer})
         st.rerun()
 
 # ── Chat Input ──
-user_input = st.chat_input("Type a question...")
+user_input = st.chat_input("Ask about Stephen's experience, projects, or expertise...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
