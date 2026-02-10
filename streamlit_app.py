@@ -127,6 +127,12 @@ def init_llm() -> ChatOpenAI:
     except TypeError:
         return ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=st.secrets["OPENAI_API_KEY"])
 
+def init_llm_mini() -> ChatOpenAI:
+    try:
+        return ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=st.secrets["OPENAI_API_KEY"])
+    except TypeError:
+        return ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=st.secrets["OPENAI_API_KEY"])
+
 def init_embeddings() -> OpenAIEmbeddings:
     try:
         return OpenAIEmbeddings(api_key=st.secrets["OPENAI_API_KEY"])
@@ -532,13 +538,15 @@ def build_qa_pdf_bytes(messages: List[Dict], evidence_files: List[str]) -> Optio
 # CORE: run_turn()
 # ═══════════════════════════════════════════════════════════════════════════════
 def run_turn(user_text: str, action_mode: str = "chat") -> str:
+    llm_mini = init_llm_mini()
     llm = init_llm()
 
-    new_bits = extract_recruiter_constraints(llm, user_text)
+    # Cheap calls on mini
+    new_bits = extract_recruiter_constraints(llm_mini, user_text)
     update_recruiter_state(new_bits)
 
     standalone_query = rewrite_to_standalone(
-        llm, st.session_state.messages, user_text,
+        llm_mini, st.session_state.messages, user_text,
         st.session_state.recruiter_state, max_turns=8,
     )
 
@@ -562,16 +570,34 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
         action_mode=action_mode,
     )
 
+    # Stream the answer from the big model
     try:
-        out = llm.invoke([
+        chunks = []
+        stream = llm.stream([
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_text},
         ])
-        answer = (out.content or "").strip()
+        placeholder = st.empty()
+        for chunk in stream:
+            token = chunk.content or ""
+            chunks.append(token)
+            placeholder.markdown("".join(chunks) + " |", unsafe_allow_html=True)
+        answer = "".join(chunks).strip()
+        placeholder.empty()
     except Exception as e:
         answer = f"Sorry, I hit an error processing that. ({e})"
 
     answer = enforce_no_external_refs(answer)
+
+    # LinkedIn CTA
+    answer += (
+        '\n\n<div style="margin-top:1.2rem;padding-top:0.8rem;'
+        'border-top:1px solid #e2e0db;font-size:0.82rem;color:#5a5f6b;">'
+        'Interested? <a href="' + LINKEDIN_URL + '" target="_blank" '
+        'style="color:#1a5c3a;font-weight:500;text-decoration:none;">'
+        'Connect on LinkedIn &rarr;</a></div>'
+    )
+
     return answer
 
 
@@ -1029,6 +1055,40 @@ if st.session_state.pinned_opening and not st.session_state.messages:
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"], unsafe_allow_html=True)
+
+# ── Starter Chips (only show before first user message) ──
+user_has_spoken = any(m.get("role") == "user" for m in st.session_state.messages)
+if not user_has_spoken:
+    st.markdown("""
+    <style>
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0 1.5rem; max-width: 960px; }
+    .chip-btn { background: #fff; border: 1px solid #e2e0db; border-radius: 100px;
+        padding: 8px 18px; font-size: 0.85rem; color: #1a1d23; cursor: pointer;
+        font-family: 'DM Sans', sans-serif; transition: 0.2s ease; }
+    .chip-btn:hover { border-color: #1a5c3a; color: #1a5c3a; background: #e8f0ec; }
+    </style>
+    """, unsafe_allow_html=True)
+    chip_cols = st.columns(4)
+    chip_labels = [
+        "Security Architect experience",
+        "AI & RAG portfolio",
+        "Clearance & compliance",
+        "Publications & research",
+    ]
+    chip_clicked = None
+    for i, label in enumerate(chip_labels):
+        with chip_cols[i]:
+            if st.button(label, key=f"chip_{i}", use_container_width=True):
+                chip_clicked = label
+    if chip_clicked:
+        st.session_state.messages.append({"role": "user", "content": chip_clicked})
+        with st.chat_message("user"):
+            st.markdown(chip_clicked)
+        with st.chat_message("assistant"):
+            answer = run_turn(chip_clicked, action_mode="chat")
+            st.markdown(answer, unsafe_allow_html=True)
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+        st.rerun()
 
 # ── Chat Input ──
 user_input = st.chat_input("Type a question...")
