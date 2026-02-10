@@ -1,3 +1,21 @@
+# Self-healing: fix smart quotes on boot
+import sys as _sys, os as _os, pathlib as _pl
+_me = _pl.Path(__file__)
+_raw = _me.read_bytes()
+_lq = chr(8220).encode('utf-8')
+_rq = chr(8221).encode('utf-8')
+_la = chr(8216).encode('utf-8')
+_ra = chr(8217).encode('utf-8')
+_em = chr(8212).encode('utf-8')
+_en = chr(8211).encode('utf-8')
+if _lq in _raw or _rq in _raw or _la in _raw or _ra in _raw:
+    _raw = _raw.replace(_lq, b'\x22').replace(_rq, b'\x22')
+    _raw = _raw.replace(_la, b'\x27').replace(_ra, b'\x27')
+    _raw = _raw.replace(_em, b'\x2d\x2d').replace(_en, b'\x2d')
+    _me.write_bytes(_raw)
+    _os.execv(_sys.executable, [_sys.executable] + _sys.argv)
+
+
 # Dr. Stephen Dietrich-Kolokouris – Portfolio RAG Interface
 
 # Complete production build: premium UI + full backend.
