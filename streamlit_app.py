@@ -213,9 +213,7 @@ def load_or_build_faiss() -> FAISS:
     splitter = RecursiveCharacterTextSplitter(chunk_size=1100, chunk_overlap=160)
     chunks = splitter.split_documents(docs)
 
-    with st.status("Indexing corpus...", expanded=False) as status:
-        vs = FAISS.from_documents(chunks, embeddings)
-        status.update(label="Corpus indexed", state="complete")
+    vs = FAISS.from_documents(chunks, embeddings)
 
     os.makedirs(FAISS_DIR, exist_ok=True)
     try:
@@ -962,29 +960,13 @@ st.markdown("""
 st.markdown('<div class="chat-section-label">Conversation</div>', unsafe_allow_html=True)
 
 # ── Action Buttons ──
-col_a, col_b, col_c = st.columns(3)
+col_a, col_b = st.columns(2)
 with col_a:
-    do_verify = st.button("Check sources", use_container_width=True)
-with col_b:
     do_fit = st.button("Summarize fit", use_container_width=True)
-with col_c:
+with col_b:
     do_outreach = st.button("Draft message", use_container_width=True)
 
 # ── Handle Action Buttons ──
-if do_verify:
-    last_assistant = None
-    for m in reversed(st.session_state.messages):
-        if (m.get("role") or "").lower() == "assistant":
-            last_assistant = (m.get("content") or "").strip()
-            break
-    if not last_assistant:
-        st.toast("Nothing to check yet.", icon="💬")
-    else:
-        with st.chat_message("assistant"):
-            answer = run_turn("Verify the previous answer:\n\n" + last_assistant, action_mode="verify")
-            st.markdown(answer, unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": answer})
-
 if do_fit:
     with st.chat_message("assistant"):
         answer = run_turn(
