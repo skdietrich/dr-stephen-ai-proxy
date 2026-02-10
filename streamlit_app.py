@@ -51,9 +51,14 @@ except Exception:
 logger = logging.getLogger(__name__)
 
 
+import streamlit as st
+import streamlit.components.v1 as components # <--- MUST HAVE THIS IMPORT
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE CONFIG & UTILITIES
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# 1. This MUST be the first Streamlit command
 st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris | Cybersecurity & AI Expert",
     page_icon="◆",
@@ -61,17 +66,19 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Force scroll to top on every load
+# 2. This script forces the browser to jump to the top on every rerun
+# Targeting '.main' is essential because that's Streamlit's internal scroll container.
 components.html(
     """
     <script>
-        window.parent.document.querySelector('.main').scrollTo(0,0);
+        window.parent.document.querySelector('.main').scrollTo({
+            top: 0,
+            left: 0,
+            behavior: 'auto'
+        });
     </script>
     """,
     height=0,
-)
-
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # GUARDRAILS
 # ═══════════════════════════════════════════════════════════════════════════════
