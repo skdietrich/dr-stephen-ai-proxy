@@ -851,10 +851,22 @@ html, body, [data-testid="stAppViewContainer"] {
     font-family: 'DM Sans', sans-serif !important; font-size: 0.95rem !important;
     border-radius: var(--radius) !important; border: 1px solid var(--border) !important;
     background: var(--card-bg) !important; padding: 1rem 1.2rem !important;
+    color: var(--text-primary) !important; caret-color: var(--text-primary) !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
     transition: var(--transition);
+}
+[data-testid="stChatInput"] textarea::placeholder {
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
 }
 [data-testid="stChatInput"] textarea:focus {
     border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--accent-light) !important;
+}
+[data-testid="stChatInput"] button {
+    color: var(--accent) !important;
+}
+[data-testid="stChatInput"] button svg {
+    fill: var(--accent) !important; stroke: var(--accent) !important;
 }
 
 /* ── Buttons ── */
