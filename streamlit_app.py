@@ -58,7 +58,7 @@ st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris",
     page_icon="◆",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 
@@ -629,19 +629,37 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0d0f12 0%, #141820 100%) !important;
     border-right: 1px solid rgba(255,255,255,0.06) !important;
-    min-width: 300px !important;
-    width: 300px !important;
-    transform: none !important;
-    position: relative !important;
 }
-[data-testid="stSidebar"][aria-expanded="false"] {
-    min-width: 300px !important;
-    width: 300px !important;
-    transform: none !important;
-    margin-left: 0 !important;
+
+/* Desktop: sidebar always visible, locked open */
+@media (min-width: 769px) {
+    [data-testid="stSidebar"] {
+        min-width: 300px !important;
+        width: 300px !important;
+        transform: none !important;
+        position: relative !important;
+    }
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        min-width: 300px !important;
+        width: 300px !important;
+        transform: none !important;
+        margin-left: 0 !important;
+    }
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
 }
-[data-testid="collapsedControl"] {
-    display: none !important;
+
+/* Mobile: sidebar starts collapsed, can be toggled */
+@media (max-width: 768px) {
+    [data-testid="stSidebar"] {
+        min-width: 260px !important;
+        width: 80vw !important;
+        max-width: 300px !important;
+    }
+    [data-testid="collapsedControl"] {
+        display: block !important;
+    }
 }
 [data-testid="stSidebar"] * { color: #c8cad0 !important; }
 [data-testid="stSidebar"] .stMarkdown h1,
