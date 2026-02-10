@@ -146,6 +146,12 @@ def init_embeddings() -> OpenAIEmbeddings:
 FAISS_DIR = "faiss_index"
 MANIFEST_PATH = os.path.join(FAISS_DIR, "manifest.json")
 
+# One-time rebuild: delete stale index, then leave a flag so it doesn't repeat
+_REBUILD_FLAG = os.path.join(FAISS_DIR, ".rebuilt_v3")
+if os.path.isdir(FAISS_DIR) and not os.path.exists(_REBUILD_FLAG):
+    import shutil
+    shutil.rmtree(FAISS_DIR, ignore_errors=True)
+
 def _file_sha256(path: str) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -226,21 +232,28 @@ def load_or_build_faiss() -> FAISS:
         vs.save_local(FAISS_DIR)
         with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
             json.dump(new_manifest, f, indent=2)
+        with open(_REBUILD_FLAG, "w") as f:
+            f.write("ok")
     except Exception as e:
         st.warning(f"FAISS index could not be saved (non-fatal): {e}")
 
     return vs
 
 
+def _corpus_fingerprint() -> str:
+    """Hash of current PDF manifest -- changes when files are added/removed/modified."""
+    m = _build_manifest("data") if os.path.exists("data") else {}
+    return hashlib.sha256(json.dumps(m, sort_keys=True).encode()).hexdigest()[:16]
+
 @st.cache_resource
-def init_retriever():
+def init_retriever(corpus_fingerprint: str = ""):
     vs = load_or_build_faiss()
     return vs.as_retriever(
         search_type="mmr",
-        search_kwargs={"k": 7, "fetch_k": 24, "lambda_mult": 0.5},
+        search_kwargs={"k": 15, "fetch_k": 40, "lambda_mult": 0.4},
     )
 
-retriever = init_retriever()
+retriever = init_retriever(corpus_fingerprint=_corpus_fingerprint())
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -276,8 +289,8 @@ def format_evidence_pack(docs) -> Tuple[str, List[str], List[str]]:
         text = (d.page_content or "").strip()
         if not text:
             continue
-        if len(text) > 2200:
-            text = text[:2200].rstrip() + "..."
+        if len(text) > 3000:
+            text = text[:3000].rstrip() + "..."
 
         parts.append(f"[SOURCE: {label}]\n{text}")
         labels.append(label)
@@ -427,15 +440,29 @@ def build_system_prompt(
     action_instructions = action_map.get(action_mode, (
         "TASK MODE: CHAT.\n"
         "- Answer the question in a recruiter-grade, professional manner.\n"
-        "- If something is not supported, say it's not in the current documentation.\n"
+        "- If the evidence pack lacks detail, acknowledge the topic and suggest a more specific question.\n"
     ))
 
     return (
         "You are a professional assistant representing Dr. Stephen Dietrich-Kolokouris.\n\n"
+        "CORPUS OVERVIEW (topics covered in the full documentation):\n"
+        "- Published books: 'The American Paranormal' (2025, consciousness/spiritualism research),\n"
+        "  'Chicago Ripper Crew: Reboot' (true crime), 'Behind the Mask: Hitler the Socialite'\n"
+        "  (historical analysis), plus four additional published works (seven total).\n"
+        "- Academic: PhD from Goethe University Frankfurt (History), German language fluency.\n"
+        "- Research papers: 'Silent Weapons: Sleeper Malware and the Future of Cyber Warfare',\n"
+        "  'Embedded Persistent Threats and the 2026 Venezuela Cyber-Kinetic Operation',\n"
+        "  'AI Chatbots as National Security Risks' (WarSim), NAMECOMMS whitepaper.\n"
+        "- Cybersecurity: CCIE certification, penetration testing, supply chain risk, IR.\n"
+        "- Intelligence: Former CIA contractor, counterterrorism (Al-Qaeda/ISIS theaters).\n"
+        "- AI/ML: Production RAG systems, LangChain, FAISS, agent frameworks.\n"
+        "- Compliance: NIST CSF, 800-53, 800-171, NERC CIP, ISO 27001, FISMA, FedRAMP.\n"
+        "- Media: Fox 4 Dallas appearances, YouTube content, Skinwalker Ranch fieldwork.\n\n"
         "MANDATORY CONSTRAINTS:\n"
         "1) Use ONLY the EVIDENCE PACK below (and vendor block if present).\n"
         "2) Do NOT invent facts, dates, employers, credentials, or project details.\n"
-        "3) If the answer cannot be supported, say it's not in the current documentation.\n"
+        "3) If the evidence pack lacks detail on a topic listed in the CORPUS OVERVIEW,\n"
+        "   acknowledge the topic exists and invite a more specific follow-up question.\n"
         "4) Do NOT include URLs or bibliography headings.\n"
         "5) Never reference 'the corpus', 'evidence pack', or 'the system' -- speak naturally.\n\n"
         f"RECRUITER CONTEXT JSON:\n{state_text}\n\n"
