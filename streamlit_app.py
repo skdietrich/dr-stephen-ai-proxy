@@ -1,3 +1,25 @@
+import sys, os, pathlib
+me = pathlib.Path(__file__)
+raw = me.read_bytes()
+lq = bytes([0xe2, 0x80, 0x9c])
+rq = bytes([0xe2, 0x80, 0x9d])
+la = bytes([0xe2, 0x80, 0x98])
+ra = bytes([0xe2, 0x80, 0x99])
+em = bytes([0xe2, 0x80, 0x94])
+en = bytes([0xe2, 0x80, 0x93])
+sq = bytes([0x22])
+sa = bytes([0x27])
+dd = bytes([0x2d, 0x2d])
+sd = bytes([0x2d])
+if lq in raw or rq in raw or la in raw or ra in raw:
+    raw = raw.replace(lq, sq).replace(rq, sq)
+    raw = raw.replace(la, sa).replace(ra, sa)
+    raw = raw.replace(em, dd).replace(en, sd)
+    me.write_bytes(raw)
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+
+
 # Self-healing: fix smart quotes on boot
 import sys as _sys, os as _os, pathlib as _pl
 _me = _pl.Path(__file__)
