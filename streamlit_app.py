@@ -800,7 +800,7 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 
 /* ── Hide chrome ── */
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
 [data-testid="stToolbar"] { display: none; }
 
 /* ── Animation ── */
