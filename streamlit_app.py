@@ -187,11 +187,27 @@ def load_or_build_faiss() -> FAISS:
             return FAISS.load_local(FAISS_DIR, embeddings, allow_dangerous_deserialization=True)
         except Exception as e:
             st.warning(f"FAISS index load failed; rebuilding. Reason: {e}")
+            import shutil
+            shutil.rmtree(FAISS_DIR, ignore_errors=True)
 
-    loader = PyPDFDirectoryLoader("data/")
-    docs = loader.load()
+    # Load PDFs one at a time so a single corrupt file doesn't crash everything
+    from langchain_community.document_loaders import PyPDFLoader
+    docs = []
+    skipped = []
+    for root, _, fnames in os.walk("data"):
+        for fn in sorted(fnames):
+            if not fn.lower().endswith(".pdf"):
+                continue
+            fpath = os.path.join(root, fn)
+            try:
+                docs.extend(PyPDFLoader(fpath).load())
+            except Exception as e:
+                skipped.append(fn)
+                logger.warning("Skipping corrupt PDF %s: %s", fn, e)
+    if skipped:
+        st.warning(f"Skipped {len(skipped)} corrupt PDF(s): {', '.join(skipped)}")
     if not docs:
-        st.error("No documents found in `/data`.")
+        st.error("No readable documents found in `/data`.")
         st.stop()
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=1100, chunk_overlap=160)
