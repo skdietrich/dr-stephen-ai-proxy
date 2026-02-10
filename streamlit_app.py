@@ -27,9 +27,11 @@ import tempfile
 from io import BytesIO
 from typing import Dict, List, Optional, Tuple
 
-import streamlit as st
+iimport streamlit as st
 import streamlit.components.v1 as components
+
 from langchain_community.document_loaders import PyPDFDirectoryLoader
+...
 from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -53,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE CONFIG & VIEWPORT CONTROL
+# PAGE CONFIG
 # ═══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
     page_title="Dr. Stephen Dietrich-Kolokouris | Cybersecurity & AI Expert",
@@ -62,21 +64,41 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Force scroll to top on every load/rerun
-components.html(
-    """
-    <script>
-        window.parent.document.querySelector('.main').scrollTo({
-            top: 0,
-            left: 0,
-            behavior: 'auto'
-        });
-    </script>
-    """,
-    height=0,
-)
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORCE TOP ON INITIAL PAGE LOAD (once per session)
+# ═══════════════════════════════════════════════════════════════════════════════
+if "did_scroll_top" not in st.session_state:
+    st.session_state.did_scroll_top = True
 
+    components.html(
+        """
+        <script>
+          (function() {
+            function goTop() {
+              try {
+                // Most reliable: scroll the app container if present
+                const app = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
+                if (app) app.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 
+                // Fallbacks
+                window.parent.scrollTo(0, 0);
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              } catch (e) {}
+            }
+
+            // Run immediately and after layout settles
+            goTop();
+            setTimeout(goTop, 50);
+            setTimeout(goTop, 250);
+            setTimeout(goTop, 800);
+          })();
+        </script>
+        """,
+        height=0,
+    )
+Why this works (and your earlier attempt didn’t
 # ═══════════════════════════════════════════════════════════════════════════════
 # GUARDRAILS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -217,6 +239,7 @@ def load_or_build_faiss() -> FAISS:
             import shutil
             shutil.rmtree(FAISS_DIR, ignore_errors=True)
 
+    # Load PDFs one at a time so a single corrupt file doesn't crash everything
     from langchain_community.document_loaders import PyPDFLoader
     docs = []
     skipped = []
@@ -253,7 +276,9 @@ def load_or_build_faiss() -> FAISS:
 
     return vs
 
+
 def _corpus_fingerprint() -> str:
+    """Hash of current PDF manifest -- changes when files are added/removed/modified."""
     m = _build_manifest("data") if os.path.exists("data") else {}
     return hashlib.sha256(json.dumps(m, sort_keys=True).encode()).hexdigest()[:16]
 
@@ -365,6 +390,10 @@ def update_recruiter_state(new_bits: dict):
     if o in ("onsite", "hybrid", "remote"):
         s["onsite_remote"] = o
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# QUERY REWRITE (history + recruiter context aware)
+# ═══════════════════════════════════════════════════════════════════════════════
 def rewrite_to_standalone(
     llm: ChatOpenAI, chat_history: List[Dict],
     user_input: str, recruiter_state: dict, max_turns: int = 8,
@@ -481,6 +510,7 @@ def build_system_prompt(
         + vendor_block
     )
 
+
 def build_vendor_block(vendor_ctx: Optional[dict]) -> str:
     if not vendor_ctx:
         return ""
@@ -497,6 +527,7 @@ def build_vendor_block(vendor_ctx: Optional[dict]) -> str:
         "Mitigation priorities (deterministic):\n"
         + "\n".join(f"- {m}" for m in vendor_ctx.get("mitigations", []))
     )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PDF EXPORT
@@ -574,6 +605,7 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
     llm_mini = init_llm_mini()
     llm = init_llm()
 
+    # Cheap calls on mini
     new_bits = extract_recruiter_constraints(llm_mini, user_text)
     update_recruiter_state(new_bits)
 
@@ -602,6 +634,7 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
         action_mode=action_mode,
     )
 
+    # Stream the answer from the big model
     try:
         chunks = []
         stream = llm.stream([
@@ -620,6 +653,7 @@ def run_turn(user_text: str, action_mode: str = "chat") -> str:
 
     answer = enforce_no_external_refs(answer)
 
+    # LinkedIn CTA
     answer += (
         '\n\n<div style="margin-top:1.5rem;padding-top:1rem;'
         'border-top:1px solid #e2e0db;font-size:0.88rem;color:#5a5f6b;">'
@@ -689,6 +723,7 @@ html, body, [data-testid="stAppViewContainer"] {
     border-right: 1px solid rgba(255,255,255,0.08) !important;
 }
 
+/* Desktop: sidebar always visible, locked open */
 @media (min-width: 769px) {
     [data-testid="stSidebar"] {
         min-width: 320px !important;
@@ -707,6 +742,7 @@ html, body, [data-testid="stAppViewContainer"] {
     }
 }
 
+/* Mobile: sidebar starts collapsed, can be toggled */
 @media (max-width: 768px) {
     [data-testid="stSidebar"] {
         min-width: 280px !important;
@@ -1118,7 +1154,7 @@ html, body, [data-testid="stAppViewContainer"] {
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SIDEBAR CONTENT
+# SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
 
@@ -1150,10 +1186,18 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     st.markdown("---")
+
+    # ── Connect ──
     st.markdown('<div class="sb-section-title">Connect</div>', unsafe_allow_html=True)
-    st.markdown(f'<a href="{LINKEDIN_URL}" target="_blank" class="sb-link"><span class="link-icon">in</span> LinkedIn Profile</a>', unsafe_allow_html=True)
+    st.markdown(f"""
+    <a href="{LINKEDIN_URL}" target="_blank" class="sb-link">
+        <span class="link-icon">in</span> LinkedIn Profile
+    </a>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
+
+    # ── Quick Stats ──
     st.markdown('<div class="sb-section-title">Quick Stats</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="sb-item"><span class="stat-icon">▸</span> <strong>20+ years</strong> in cybersecurity</div>
@@ -1164,20 +1208,75 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     st.markdown("---")
+
+    # ── Core Expertise ──
     st.markdown('<div class="sb-section-title">Core Expertise</div>', unsafe_allow_html=True)
     st.markdown("""
-    <div class="sb-item"><strong>Security Architecture</strong><br/>Infrastructure protection and incident response.</div>
-    <div class="sb-item"><strong>AI / RAG Systems</strong><br/>Agentic frameworks and vector retrieval.</div>
-    <div class="sb-item"><strong>Intelligence Analysis</strong><br/>Former CIA contractor operations.</div>
+    <div class="sb-item"><strong>Security Architecture</strong><br/>
+    Penetration testing, incident response, supply chain risk for critical infrastructure</div>
+    
+    <div class="sb-item"><strong>AI / RAG Systems</strong><br/>
+    Production retrieval pipelines, LangChain, FAISS, vector databases, agent frameworks</div>
+    
+    <div class="sb-item"><strong>Intelligence Analysis</strong><br/>
+    Former CIA contractor, counterterrorism operations (Al-Qaeda, ISIS theaters)</div>
+    
+    <div class="sb-item"><strong>Research & Publishing</strong><br/>
+    7 books, WarSim Algorithm (DoD-submitted), consciousness research</div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.session_state.personal_mode = st.toggle("◆ Conversational Mode", value=st.session_state.personal_mode)
 
+    # ── Conversational toggle ──
+    st.session_state.personal_mode = st.toggle(
+        "◆ Conversational Mode",
+        value=st.session_state.personal_mode,
+        help="Enable career narrative and contextual insights in responses.",
+    )
+
+    st.markdown("---")
+
+    # ── Featured Publications ──
+    with st.expander("▸ Featured Publications"):
+        st.markdown("""
+        **Recent Books:**
+        - *The American Paranormal* (2025)
+        - *Chicago Ripper Crew: Reboot*
+        - *Behind the Mask: Hitler the Socialite*
+        
+        **Research Papers:**
+        - *Silent Weapons: Sleeper Malware*
+        - *WarSim Algorithm* (DoD submission)
+        - *AI Chatbots as National Security Risks*
+        """)
+
+    # ── About This Interface ──
+    with st.expander("ⓘ About This Assistant"):
+        st.markdown("""
+        This AI assistant is powered by **retrieval-augmented generation (RAG)** 
+        and is trained on Dr. Dietrich-Kolokouris's professional portfolio, 
+        publications, and project documentation.
+        
+        Every response is **grounded in source material** — no hallucinations, 
+        just verified expertise.
+        """)
+
+    # ── PDF Export ──
     if REPORTLAB_OK and st.session_state.messages:
-        pdf_bytes = build_qa_pdf_bytes(st.session_state.messages, st.session_state.get("qa_evidence_files", []))
+        st.markdown("---")
+        st.markdown('<div class="sb-section-title">Export</div>', unsafe_allow_html=True)
+        pdf_bytes = build_qa_pdf_bytes(
+            st.session_state.messages,
+            st.session_state.get("qa_evidence_files", []),
+        )
         if pdf_bytes:
-            st.download_button(label="⬇ Download Transcript (PDF)", data=pdf_bytes, file_name="conversation.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button(
+                label="⬇ Download Transcript (PDF)",
+                data=pdf_bytes,
+                file_name="conversation_transcript.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1187,9 +1286,15 @@ with st.sidebar:
 # ── Header ──
 st.markdown("""
 <div class="main-header">
-    <div class="main-tagline"><span class="tagline-icon">◆</span> AI-POWERED PORTFOLIO ASSISTANT</div>
+    <div class="main-tagline">
+        <span class="tagline-icon">◆</span> AI-POWERED PORTFOLIO ASSISTANT
+    </div>
     <div class="main-greeting">Discover how Stephen's expertise aligns with your needs</div>
-    <div class="main-subtitle">Description mapping qualifications with source-backed precision.</div>
+    <div class="main-subtitle">
+        This intelligent assistant provides instant access to verified project experience, 
+        certifications, and research. Describe your role requirements, and I'll map 
+        relevant qualifications with source-backed precision.
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1197,71 +1302,128 @@ st.markdown("""
 st.markdown("""
 <div class="domain-grid">
     <div class="domain-card cyber">
-        <div class="domain-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </div>
         <div class="domain-label">Security Architecture</div>
-        <div class="domain-desc">Designing resilient security frameworks and infrastructure.</div>
+        <div class="domain-desc">Designing resilient security frameworks through penetration testing, network audits, and CCIE-level infrastructure expertise. Specialized in incident response and critical infrastructure protection.</div>
     </div>
     <div class="domain-card rag">
-        <div class="domain-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+                <path d="M16.24 7.76l-2.12 2.12M16.24 16.24l-2.12-2.12M7.76 16.24l2.12-2.12M7.76 7.76l2.12 2.12"/>
+            </svg>
+        </div>
         <div class="domain-label">AI & RAG Systems</div>
-        <div class="domain-desc">Building production-grade retrieval-augmented generation pipelines.</div>
+        <div class="domain-desc">Building production-grade retrieval pipelines with LangChain, FAISS, and ChromaDB. Expert in agentic frameworks, prompt engineering, and AI system architecture.</div>
     </div>
     <div class="domain-card intel">
-        <div class="domain-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+            </svg>
+        </div>
         <div class="domain-label">Intelligence & Analysis</div>
-        <div class="domain-desc">Strategic threat intelligence and defensive modeling.</div>
+        <div class="domain-desc">Delivering actionable intelligence through CIA contractor operations, supply chain vulnerability research, threat modeling, and data-driven defense strategies.</div>
     </div>
     <div class="domain-card research">
-        <div class="domain-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="domain-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+        </div>
         <div class="domain-label">Research & Publishing</div>
-        <div class="domain-desc">Published author of 7 books and PhD in History.</div>
+        <div class="domain-desc">Published author with 7 books and PhD in History. Expertise in WarSim conflict simulation, consciousness research, and investigative analysis.</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Interactive Chat Section ──
+# ── Chat Section ──
 st.markdown('<div class="chat-section-label">▸ Interactive Conversation</div>', unsafe_allow_html=True)
 
 # ── Action Buttons ──
 col_a, col_b = st.columns(2)
 with col_a:
-    if st.button("⊕ Analyze Role Fit", use_container_width=True):
-        with st.chat_message("assistant"):
-            answer = run_turn("Analyze fit.", action_mode="fit")
-            st.session_state.messages.append({"role": "assistant", "content": answer})
+    do_fit = st.button("⊕ Analyze Role Fit", use_container_width=True, help="Get a structured assessment of alignment with your requirements")
 with col_b:
-    if st.button("✎ Draft Outreach Message", use_container_width=True):
-        with st.chat_message("assistant"):
-            answer = run_turn("Draft outreach.", action_mode="outreach")
-            st.session_state.messages.append({"role": "assistant", "content": answer})
+    do_outreach = st.button("✎ Draft Outreach Message", use_container_width=True, help="Generate a personalized introduction based on our conversation")
 
-# ── Chat Logic ──
+# ── Handle Action Buttons ──
+if do_fit:
+    with st.chat_message("assistant"):
+        answer = run_turn(
+            "Provide a comprehensive fit analysis for the role and requirements we've discussed.",
+            action_mode="fit",
+        )
+        st.markdown(answer, unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+
+if do_outreach:
+    with st.chat_message("assistant"):
+        answer = run_turn(
+            "Draft a professional outreach message highlighting relevant experience based on our discussion.",
+            action_mode="outreach",
+        )
+        st.markdown(answer, unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+
+
+# ── Pinned Opening ──
 if st.session_state.pinned_opening and not st.session_state.messages:
-    pinned = "▸ Welcome! I'm here to help you explore Stephen's professional background."
+    pinned = (
+        "▸ Welcome! I'm here to help you explore Stephen's professional background. "
+        "Tell me about the role or project you're working on, and I'll provide specific, "
+        "source-backed insights on how his experience aligns with your needs."
+    )
     st.session_state.messages.append({"role": "assistant", "content": pinned})
 
+# ── Render Chat History ──
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"], unsafe_allow_html=True)
 
-# ── Starter Chips ──
-if not any(m.get("role") == "user" for m in st.session_state.messages):
+# ── Starter Chips (only show before first user message) ──
+user_has_spoken = any(m.get("role") == "user" for m in st.session_state.messages)
+if not user_has_spoken:
     chip_cols = st.columns(4)
-    topics = ["Security Architecture", "AI & RAG Portfolio", "Intelligence Background", "Publications & Research"]
-    for i, topic in enumerate(topics):
-        if chip_cols[i].button(topic, key=f"chip_{i}", use_container_width=True):
-            st.session_state.messages.append({"role": "user", "content": topic})
-            with st.chat_message("user"): st.markdown(topic)
-            with st.chat_message("assistant"):
-                ans = run_turn(topic, action_mode="chat")
-                st.session_state.messages.append({"role": "assistant", "content": ans})
-            st.rerun()
+    chip_labels = [
+        "Security Architecture",
+        "AI & RAG Portfolio",
+        "Intelligence Background",
+        "Publications & Research",
+    ]
+    chip_clicked = None
+    for i, label in enumerate(chip_labels):
+        with chip_cols[i]:
+            if st.button(label, key=f"chip_{i}", use_container_width=True):
+                chip_clicked = label
+    
+    if chip_clicked:
+        st.session_state.messages.append({"role": "user", "content": chip_clicked})
+        with st.chat_message("user"):
+            st.markdown(chip_clicked)
+        with st.chat_message("assistant"):
+            answer = run_turn(chip_clicked, action_mode="chat")
+            st.markdown(answer, unsafe_allow_html=True)
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+        st.rerun()
 
 # ── Chat Input ──
-user_input = st.chat_input("Ask about Stephen's qualifications...")
+user_input = st.chat_input("Ask about Stephen's experience, projects, or expertise...")
+
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"): st.markdown(user_input)
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
     with st.chat_message("assistant"):
-        ans = run_turn(user_input, action_mode="chat")
-        st.session_state.messages.append({"role": "assistant", "content": ans})
+        answer = run_turn(user_input, action_mode="chat")
+        st.markdown(answer, unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "assistant", "content": answer})
