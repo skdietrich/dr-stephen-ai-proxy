@@ -629,6 +629,19 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0d0f12 0%, #141820 100%) !important;
     border-right: 1px solid rgba(255,255,255,0.06) !important;
+    min-width: 300px !important;
+    width: 300px !important;
+    transform: none !important;
+    position: relative !important;
+}
+[data-testid="stSidebar"][aria-expanded="false"] {
+    min-width: 300px !important;
+    width: 300px !important;
+    transform: none !important;
+    margin-left: 0 !important;
+}
+[data-testid="collapsedControl"] {
+    display: none !important;
 }
 [data-testid="stSidebar"] * { color: #c8cad0 !important; }
 [data-testid="stSidebar"] .stMarkdown h1,
